@@ -16,6 +16,8 @@ int main() {
 
 	msg->GetProperty("test3") = "\"Water has left the game.\"";
 
+	msg->GetProperty("test4") = "nested = test this should not terminate or break the message";
+
 	msg->Serialize(buf);
 
 	printf("buf len is %lu\n", buf.size());
