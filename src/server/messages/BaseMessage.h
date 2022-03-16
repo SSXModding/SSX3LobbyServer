@@ -35,6 +35,10 @@ namespace ls {
 
 		/**
 		 * Read a message from a buffer.
+		 * If this
+		 *
+		 * \param[in] inBuf buffer to read message from
+		 * \param[in] client Client which this message is from.
 		 */
 		void Read(const std::vector<std::uint8_t>& inBuf, std::shared_ptr<Client> client);
 
@@ -51,19 +55,9 @@ namespace ls {
 		virtual void CreateDefaultProperties();
 
 		/**
-		 * Get a specific message property.
-		 */
-		const std::string& GetProperty(std::string_view name) const;
-
-		/**
 		 * Get a specific message property for writing.
 		 */
-		std::string& GetProperty(std::string_view name);
-
-		/**
-		 * Create a property.
-		 */
-		std::string& CreateProperty(std::string_view name);
+		std::string& GetProperty(const std::string& name);
 
 	   protected:
 		/**
