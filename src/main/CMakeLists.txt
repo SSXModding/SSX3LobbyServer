@@ -1,4 +1,5 @@
 add_executable(ssx3lobbyserver
+		Arguments.cpp
 		main.cpp
 )
 

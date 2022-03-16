@@ -10,13 +10,24 @@
 #ifndef SSX3LOBBYSERVER_ARGUMENTS_H
 #define SSX3LOBBYSERVER_ARGUMENTS_H
 
-/**
- * Command line arguments to the server.
- * TODO implement
- */
-struct Arguments {
+#include <cstdint>
+#include <string>
 
-   private:
-};
+namespace ls {
+	/**
+	 * Command line arguments to the server.
+	 */
+	struct Arguments {
+		void Process(int argc, char** argv);
+
+		const std::string& GetListenAddress() const;
+		//uint16_t Get
+
+	   private:
+		std::string listenAddress;
+		//uint16_t port;
+		//uint16_t rdirport;
+	};
+} // namespace ls
 
 #endif // SSX3LOBBYSERVER_ARGUMENTS_H

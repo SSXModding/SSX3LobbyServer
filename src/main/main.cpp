@@ -4,8 +4,12 @@
 #include <fourcc.h>
 
 #include <iostream>
+#include "Arguments.h"
 
-int main() {
+int main(int argc, char** argv) {
+	ls::Arguments a;
+
+	a.Process(argc, argv);
 
 	std::vector<std::uint8_t> buf;
 
