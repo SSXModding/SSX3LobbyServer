@@ -15,7 +15,7 @@
 namespace ls {
 
 	/**
-	 * The on-wire message header format.
+	 * The on-wire message header.
 	 */
 	struct WireMessageHeader {
 		/**
@@ -25,11 +25,12 @@ namespace ls {
 
 		/**
 		 * Unknown. Could be padding, unless it isn't? Bustin In sets it to all zeros.
+		 * It seems to also allow 64bit typecodes too though.
 		 */
 		uint32_t unknown{};
 
 		/**
-		 * The size of the payload, which immediately follows this wire structure.
+		 * The size of the payload, which immediately follows this structure.
 		 */
 		uint32_t payloadSize{};
 	};

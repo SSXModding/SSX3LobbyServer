@@ -40,15 +40,20 @@ namespace ls {
 			return;
 		}
 
-		// Read in the property
-		property_buf.resize(header.payloadSize);
-		memcpy(&property_buf[0], &buf[sizeof(WireMessageHeader)], header.payloadSize);
-
 		auto message = ls::CreateMessageFromTypeCode(header.typeCode);
 #if 0
 		if(!message)
 			return;
 #endif
+
+		// Just handle the message if there's no property data.
+		if(header.payloadSize == 1 || header.payloadSize == 0)
+			return message->HandleMessage(client);
+
+		// Read in the property
+		property_buf.resize(header.payloadSize);
+		memcpy(&property_buf[0], &buf[sizeof(WireMessageHeader)], header.payloadSize);
+
 		// Let the newly created message read properties and call HandleMessage() once it's done
 		message->ReadProperties(property_buf, client);
 	}
