@@ -33,14 +33,6 @@ namespace ls {
 		 */
 		void Serialize(std::vector<std::uint8_t>& outBuf) const;
 
-		/**
-		 * Read a message from a buffer.
-		 * If this
-		 *
-		 * \param[in] inBuf buffer to read message from
-		 * \param[in] client Client which this message is from.
-		 */
-		void Read(const std::vector<std::uint8_t>& inBuf, std::shared_ptr<Client> client);
 
 		/**
 		 * Called when the message parsing is finished. Base version does nothing.
@@ -60,6 +52,17 @@ namespace ls {
 		std::string& GetProperty(const std::string& name);
 
 	   protected:
+		friend struct MessageReader;
+
+
+		/**
+		 * Read the serialized properties from a buffer.
+		 *
+		 * \param[in] inBuf buffer to read serialized properties from (to complete this message)
+		 * \param[in] client Client which this message is from.
+		 */
+		void ReadProperties(const std::vector<std::uint8_t>& inBuf, std::shared_ptr<Client> client);
+
 		/**
 		 * The type code.
 		 * This is expected to be set by the read operation.

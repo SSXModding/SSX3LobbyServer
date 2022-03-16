@@ -8,32 +8,12 @@
 //
 
 #include "BaseMessage.h"
-
-#include <fmt/core.h>
-
-#include "../common/fourcc.h"
 #include "WireMessageHeader.h"
 
-// TODO: probably move this into a common header
-#ifdef __GNUC__
-
-	#if __BYTE_ORDER__ == __LITTLE_ENDIAN
-		#define HostToNetwork32(x) __bswap_32(x)
-		#define NetworkToHost32(x) __bswap_32(x)
-	#else
-		#define HostToNetwork32(x) (x)
-		#define NetworkToHost32(x) (x)
-	#endif
-
-#else
-	#error lazy please wait for me to implement youre are compiler support
-#endif
+#include <fmt/core.h>
+#include <byteswap.h>
 
 namespace ls {
-
-	// 2mb max payload size.
-	// also taken from bustin in
-	constexpr static auto MAX_PAYLOAD_SIZE = (1024 * 1024) * 2;
 
 	namespace {
 
@@ -64,8 +44,8 @@ namespace ls {
 	} // namespace detail
 
 	struct DebugMessage : MessageBase {
-		DebugMessage() {
-			this->typeCode = FourCCValue("test");
+		explicit DebugMessage(uint32_t TypeCode) {
+			this->typeCode = TypeCode;
 		}
 
 		void HandleMessage(std::shared_ptr<Client> client) override {
@@ -85,7 +65,7 @@ namespace ls {
 
 		if(it == map.end())
 #if 1
-			return std::make_shared<DebugMessage>();
+			return std::make_shared<DebugMessage>(TypeCode);
 #else
 			return nullptr;
 #endif
@@ -109,7 +89,7 @@ namespace ls {
 		// Fill in the header.
 		header.typeCode = this->typeCode; // TODO: do I need to HostToNetwork32 this?
 		header.unknown = 0x00000000;	  // fill
-		header.payloadSize = HostToNetwork32(total.length());
+		header.payloadSize = LSHostToNetwork32(total.length());
 
 		// Resize the output buffer so we can just copy our hard work to it.
 		outBuf.resize(sizeof(WireMessageHeader) + total.length());
@@ -119,29 +99,9 @@ namespace ls {
 		memcpy(&outBuf[sizeof(WireMessageHeader)], total.data(), total.length());
 	}
 
-	void MessageBase::Read(const std::vector<std::uint8_t>& inBuf, std::shared_ptr<Client> client) {
-		// TODO this probably will have to be moved elsewhere...
-		WireMessageHeader header;
-		std::string rawPropertyBlob;
-
+	void MessageBase::ReadProperties(const std::vector<std::uint8_t>& inBuf, std::shared_ptr<Client> client) {
 		if(inBuf.empty())
 			return;
-
-		// Read the message header
-		memcpy(&header, &inBuf[0], sizeof(WireMessageHeader));
-
-		// fix the endian on payload size
-		header.payloadSize = NetworkToHost32(header.payloadSize);
-
-		if(header.payloadSize > MAX_PAYLOAD_SIZE) {
-			// TODO: Probably close the client connection.
-			return;
-		}
-
-		// Read in the raw property blob from the packet before processing it.
-
-		rawPropertyBlob.resize(header.payloadSize);
-		memcpy(&rawPropertyBlob[0], &inBuf[sizeof(WireMessageHeader)], header.payloadSize);
 
 		std::string key;
 		std::string val;
@@ -150,15 +110,15 @@ namespace ls {
 		bool InKey = true;
 
 		// Parse all properties.
-		while(Index != header.payloadSize) {
-			if(rawPropertyBlob[Index] == '=' && InKey) {
+		while(Index != inBuf.size()) {
+			if(inBuf[Index] == '=' && InKey) {
 				// printf("key is %s\n", key.c_str());
 				InKey = false;
 				Index++;
 				continue;
 			}
 
-			if(rawPropertyBlob[Index] == '\n' && !InKey) {
+			if(inBuf[Index] == '\n' && !InKey) {
 				// printf("finished read of %s val %s\n", key.c_str(), val.c_str());
 				InKey = true;
 				properties[key] = val;
@@ -172,16 +132,16 @@ namespace ls {
 			// Write to the appropriate value for the
 			// current state.
 			if(InKey)
-				key += rawPropertyBlob[Index];
+				key += inBuf[Index];
 			else {
 				// Skip past quotation marks. Bustin in does this,
 				// I dunno if it's really needed.
-				if(rawPropertyBlob[Index] == '\"') {
+				if(inBuf[Index] == '\"') {
 					Index++;
 					continue;
 				}
 
-				val += rawPropertyBlob[Index];
+				val += inBuf[Index];
 			}
 
 			Index++;

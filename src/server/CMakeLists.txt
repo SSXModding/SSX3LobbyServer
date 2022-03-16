@@ -1,5 +1,6 @@
 add_library(ls_server
 		BaseMessage.cpp
+		MessageReader.cpp
 
 		# message implementations
 		messages/PingMessage.cpp
