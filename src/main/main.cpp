@@ -1,5 +1,5 @@
-#include "BaseMessage.h"
-#include "../common/fourcc.h"
+#include <BaseMessage.h>
+#include <fourcc.h>
 
 #include <iostream>
 

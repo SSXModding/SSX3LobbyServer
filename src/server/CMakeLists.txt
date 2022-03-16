@@ -12,6 +12,10 @@ set_target_properties(ls_server PROPERTIES
 )
 
 target_include_directories(ls_server PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+
+target_link_libraries(ls_server PRIVATE ls::common)
 target_link_libraries(ls_server PUBLIC Boost::system fmt::fmt)
+
 
 add_library(ls::server ALIAS ls_server)

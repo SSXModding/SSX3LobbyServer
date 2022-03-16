@@ -6,6 +6,7 @@ find_package(Boost REQUIRED COMPONENTS system program_options)
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
+add_subdirectory(src/common)
 add_subdirectory(src/server)
 
 add_subdirectory(src/main)
