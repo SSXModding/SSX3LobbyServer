@@ -9,4 +9,4 @@ set_target_properties(ssx3lobbyserver PROPERTIES
 		CXX_STANDARD_REQUIRED ON
 )
 
-target_link_libraries(ssx3lobbyserver PUBLIC Boost::system Boost::program_options)
+target_link_libraries(ssx3lobbyserver PRIVATE ls::server Boost::program_options)

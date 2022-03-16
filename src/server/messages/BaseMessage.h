@@ -26,6 +26,8 @@ namespace ls {
 	 */
 	struct MessageBase {
 
+		virtual ~MessageBase() = default;
+
 		/**
 		 * Serialize this message to a output buffer.
 		 */

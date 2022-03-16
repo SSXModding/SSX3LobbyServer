@@ -12,11 +12,19 @@
 
 namespace ls {
 
+	constexpr static auto TYPE_CODE = '~png';
+
 	struct PingMessage : public MessageBase {
+		PingMessage() : MessageBase() {
+			typeCode = TYPE_CODE;
+		}
+
 		void HandleMessage(std::shared_ptr<Client> client) override {
+			// in debug probably assert ~png typecode???
+
 			//client->Ping = ping calc here...
 		}
 	};
 
-	REGISTER_MESSAGE('~png', PingMessage);
+	REGISTER_MESSAGE(TYPE_CODE, PingMessage);
 }
