@@ -19,6 +19,10 @@ namespace ls {
 			typeCode = TYPE_CODE;
 		}
 
+		void CreateDefaultProperties() override {
+			properties["TIME"] = "";
+		}
+
 		void HandleMessage(std::shared_ptr<Client> client) override {
 			// in debug probably assert ~png typecode???
 

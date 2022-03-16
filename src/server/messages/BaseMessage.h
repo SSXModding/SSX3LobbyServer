@@ -70,7 +70,7 @@ namespace ls {
 		 * The type code.
 		 * This is expected to be set by the read operation.
 		 */
-		int typeCode;
+		uint32_t typeCode;
 
 		/**
 		 * All properties.
@@ -80,12 +80,12 @@ namespace ls {
 
 	namespace detail {
 		using MessageFactory = std::shared_ptr<MessageBase>(*)();
-		void RegisterMessage(int typeCode, MessageFactory factory);
+		void RegisterMessage(uint32_t typeCode, MessageFactory factory);
 
 		// Registers a message into the internal map.
 		template<class T>
 		struct MessageRegistrar {
-			MessageRegistrar(int TypeCode) {
+			MessageRegistrar(uint32_t TypeCode) {
 				detail::RegisterMessage(TypeCode, &MessageRegistrar::createMessage);
 			}
 
@@ -101,7 +101,7 @@ namespace ls {
 	}
 
 	// Creates a message from the internal message factory, or a null shared_ptr on error.
-	std::shared_ptr<MessageBase> CreateMessageFromTypeCode(int TypeCode);
+	std::shared_ptr<MessageBase> CreateMessageFromTypeCode(uint32_t TypeCode);
 
 }
 
