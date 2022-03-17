@@ -10,7 +10,7 @@
 #ifndef SSX3LOBBYSERVER_BYTESWAP_H
 #define SSX3LOBBYSERVER_BYTESWAP_H
 
-// TODO: probably move this into a common header
+// TODO: implement msvc & generic C intrins
 #ifdef __GNUC__
 
 	#if __BYTE_ORDER__ == __LITTLE_ENDIAN
@@ -22,6 +22,9 @@
 	#endif
 
 #else
+
+
+	// generic C intrins
 	#error lazy please wait for me to implement youre are compiler support
 #endif
 

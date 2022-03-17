@@ -12,7 +12,7 @@
 
 namespace ls {
 
-	constexpr static auto TYPE_CODE = '~png';
+	constexpr static auto TYPE_CODE = ls::FourCCValue("~png");
 
 	struct PingMessage : public MessageBase {
 		PingMessage() : MessageBase() {
@@ -23,12 +23,12 @@ namespace ls {
 			properties["TIME"] = "";
 		}
 
-		void HandleMessage(std::shared_ptr<Client> client) override {
+		void HandleMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) override {
 			// in debug probably assert ~png typecode???
 
 			//client->Ping = ping calc here...
 		}
 	};
 
-	REGISTER_MESSAGE(TYPE_CODE, PingMessage);
+	LSRegisterMessage(TYPE_CODE, PingMessage);
 }

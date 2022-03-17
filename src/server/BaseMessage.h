@@ -15,6 +15,8 @@
 #include <vector>
 #include <memory>
 
+#include <fourcc.h>
+
 namespace ls {
 
 	// fwd decls, don't bring these in just for existing or being used as shared_ptr args..
@@ -38,7 +40,7 @@ namespace ls {
 		 * Called when the message parsing is finished. Base version does nothing.
 		 * Override to do message specific handling.
 		 */
-		virtual void HandleMessage(std::shared_ptr<Client> client);
+		virtual void HandleMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client);
 
 		/**
 		 * Call this when creating a response message to immediately
@@ -61,7 +63,7 @@ namespace ls {
 		 * \param[in] inBuf buffer to read serialized properties from (to complete this message)
 		 * \param[in] client Client which this message is from.
 		 */
-		void ReadProperties(const std::vector<std::uint8_t>& inBuf, std::shared_ptr<Client> client);
+		void ReadProperties(const std::vector<std::uint8_t>& inBuf);
 
 		/**
 		 * The type code.
@@ -93,11 +95,17 @@ namespace ls {
 			}
 		};
 
-#define REGISTER_MESSAGE(TypeCode, T) static ls::detail::MessageRegistrar<T> __registrar__##T(TypeCode);
+#define LSRegisterMessage(TypeCode, T) static ls::detail::MessageRegistrar<T> __registrar__##T(TypeCode);
 
 	}
 
-	// Creates a message from the internal message factory, or a null shared_ptr on error.
+	/**
+	 * Create a message from type code.
+	 * Essentially a very very limited form of "reflection".
+	 *
+	 * Returns a "debug" message or nullptr if the factory collection
+	 * doesn't have the specific type code in it.
+	 */
 	std::shared_ptr<MessageBase> CreateMessageFromTypeCode(uint32_t TypeCode);
 
 }

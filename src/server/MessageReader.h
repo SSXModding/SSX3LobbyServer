@@ -16,7 +16,7 @@ namespace ls {
 
 	struct MessageReader {
 
-		void ReadMessage(const std::vector<std::uint8_t>& buf, std::shared_ptr<Client> client);
+		void ReadMessage(const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client);
 
 	};
 

@@ -11,6 +11,7 @@ int main(int argc, char** argv) {
 
 	a.Process(argc, argv);
 
+#if 1 // TODO: move to catch2 tests
 	std::vector<std::uint8_t> buf;
 
 	auto msg = ls::CreateMessageFromTypeCode(ls::FourCCValue("test"));
@@ -28,6 +29,7 @@ int main(int argc, char** argv) {
 
 	// new MessageReader API test.
 	ls::MessageReader reader;
-	reader.ReadMessage(buf, nullptr);
+	reader.ReadMessage(buf, nullptr, nullptr);
+#endif
 	return 0;
 }

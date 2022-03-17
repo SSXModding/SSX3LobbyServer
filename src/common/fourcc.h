@@ -19,7 +19,6 @@ namespace ls {
 	 */
 	constexpr std::uint32_t FourCCValue(const char fourCc[5]) {
 	//	return (fourCc[0] << 24) | (fourCc[1] << 16) | (fourCc[2] << 8) | fourCc[3];
-
 		return (fourCc[3] << 24) | (fourCc[2] << 16) | (fourCc[1] << 8) | fourCc[0];
 	}
 

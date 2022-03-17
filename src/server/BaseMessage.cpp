@@ -10,6 +10,8 @@
 #include "BaseMessage.h"
 #include "WireMessageHeader.h"
 
+#include <singleton.h>
+
 #include <fmt/core.h>
 #include <byteswap.h>
 
@@ -17,12 +19,7 @@ namespace ls {
 
 	namespace {
 
-		std::unordered_map<uint32_t, detail::MessageFactory>& MessageFactoryMap() {
-			// crazy, I'll probably replace this with a sane thing or make this a macro
-			// to implement COFU
-			static std::remove_reference_t<decltype(MessageFactoryMap())> a;
-			return a;
-		}
+		CofuSingleton<std::unordered_map<uint32_t, detail::MessageFactory>> MessageFactoryMap;
 
 		std::string FormatKeyVal(std::string_view key, std::string_view value) {
 			return fmt::format("{}={}\n", key, value);
@@ -43,12 +40,17 @@ namespace ls {
 
 	} // namespace detail
 
+	/**
+	 * Internal message used when there's no assigned
+	 * handler for a message. Only used for debugging.
+	 * May be phased out when everything's all working.
+	 */
 	struct DebugMessage : MessageBase {
 		explicit DebugMessage(uint32_t TypeCode) {
 			this->typeCode = TypeCode;
 		}
 
-		void HandleMessage(std::shared_ptr<Client> client) override {
+		void HandleMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) override {
 			auto* fccbytes = ((uint8_t*)&typeCode);
 
 			printf("typecode: %c%c%c%c\n", fccbytes[0], fccbytes[1], fccbytes[2], fccbytes[3]);
@@ -79,9 +81,8 @@ namespace ls {
 		std::string total;
 
 		// Serialize all properties.
-		for(auto [key, value] : properties) {
+		for(auto [key, value] : properties)
 			total += FormatKeyVal(key, value);
-		}
 
 		// Null terminate the property data.
 		total.push_back('\0');
@@ -101,7 +102,7 @@ namespace ls {
 		memcpy(&outBuf[sizeof(WireMessageHeader)], total.data(), total.length());
 	}
 
-	void MessageBase::ReadProperties(const std::vector<std::uint8_t>& inBuf, std::shared_ptr<Client> client) {
+	void MessageBase::ReadProperties(const std::vector<std::uint8_t>& inBuf) {
 		if(inBuf.empty())
 			return;
 
@@ -109,24 +110,27 @@ namespace ls {
 		std::string val;
 
 		uint32_t Index = 0;
+
+		// true - we're parsing the key
+		// false- we're parsing the value
 		bool InKey = true;
 
 		// Parse all properties.
 		while(Index != inBuf.size()) {
 			if(inBuf[Index] == '=' && InKey) {
-				// printf("key is %s\n", key.c_str());
 				InKey = false;
 				Index++;
 				continue;
 			}
 
 			if(inBuf[Index] == '\n' && !InKey) {
-				// printf("finished read of %s val %s\n", key.c_str(), val.c_str());
-				InKey = true;
 				properties[key] = val;
 
+				// clear state and reset state to read the key again
 				key.clear();
 				val.clear();
+				InKey = true;
+
 				Index++;
 				continue;
 			}
@@ -136,8 +140,9 @@ namespace ls {
 			if(InKey)
 				key += inBuf[Index];
 			else {
-				// Skip past quotation marks. Bustin in does this,
+				// Skip past quotation marks. Breakin in does this,
 				// I dunno if it's really needed.
+				// (For reference: SSX3 Dirtysock does the same thing, even including ').
 				if(inBuf[Index] == '\"') {
 					Index++;
 					continue;
@@ -149,11 +154,9 @@ namespace ls {
 			Index++;
 		}
 
-		// We've finally gotten it.
-		HandleMessage(client);
 	}
 
-	void MessageBase::HandleMessage(std::shared_ptr<Client> client) {
+	void MessageBase::HandleMessage(std::shared_ptr<Server> server,std::shared_ptr<Client> client) {
 	}
 
 	void MessageBase::CreateDefaultProperties() {

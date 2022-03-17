@@ -21,7 +21,7 @@ namespace ls {
 	// also taken from bustin in
 	constexpr static auto MAX_PAYLOAD_SIZE = (1024 * 1024) * 2;
 
-	void MessageReader::ReadMessage(const std::vector<std::uint8_t>& buf, std::shared_ptr<Client> client) {
+	void MessageReader::ReadMessage(const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
 		WireMessageHeader header;
 		std::vector<std::uint8_t> property_buf;
 
@@ -48,14 +48,15 @@ namespace ls {
 
 		// Just handle the message if there's no property data.
 		if(header.payloadSize == 1 || header.payloadSize == 0)
-			return message->HandleMessage(client);
+			return message->HandleMessage(server, client);
 
 		// Read in the property
 		property_buf.resize(header.payloadSize);
 		memcpy(&property_buf[0], &buf[sizeof(WireMessageHeader)], header.payloadSize);
 
-		// Let the newly created message read properties and call HandleMessage() once it's done
-		message->ReadProperties(property_buf, client);
+		message->ReadProperties(property_buf);
+
+		message->HandleMessage(server, client);
 	}
 
 } // namespace ls
