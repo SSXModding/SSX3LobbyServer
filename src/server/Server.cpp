@@ -9,6 +9,9 @@
 
 #include "Server.h"
 
+#include <boost/asio/detached.hpp>
+#include <boost/asio/co_spawn.hpp>
+
 namespace ls {
 
 	Server::Server(asio::io_context& ioc)
@@ -21,5 +24,8 @@ namespace ls {
 	}
 
 
+	asio::awaitable<void> Server::listener() {
+
+	}
 
 }

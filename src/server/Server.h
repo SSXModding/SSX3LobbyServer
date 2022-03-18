@@ -12,7 +12,24 @@
 
 #include <MessageReader.h>
 
+// HACK: The ASIO awaitable header needs this to force CLion
+// into seeing awaitable<T>. Clangd seems to pick it up
+// fine but clion's internal engine seems to not make the
+// ASIO features header turn on co_await support, which
+// breaks stuff. :(.
+//
+// TODO: File a bug with jetbrains? I may actually do so
+// either that or wait until it hopefully isn't needed anymore.
+#ifdef __CLION_IDE_
+	#define GENERATING_DOCUMENTATION
+#endif
+
 #include <boost/asio/awaitable.hpp>
+
+#ifdef __CLION_IDE_
+	#undef GENERATING_DOCUMENTATION
+#endif
+
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
@@ -31,7 +48,7 @@ namespace ls {
 		asio::io_context& ioc;
 
 
-		//asio::awaitable<void> listener();
+		asio::awaitable<void> listener();
 
 		// TODO: maybe timer for stuff or keep alive
 		// if ~png is sent that much
