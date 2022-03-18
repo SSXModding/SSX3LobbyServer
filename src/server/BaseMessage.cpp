@@ -91,7 +91,7 @@ namespace ls {
 
 		// Fill in the header.
 		header.typeCode = this->typeCode; // TODO: do I need to HostToNetwork32 this?
-		header.unknown = 0x00000000;	  // fill
+		header.typeCodeHi = 0x00000000;	  // fill
 		header.payloadSize = LSHostToNetwork32(len);
 
 		// Resize the output buffer so we can just copy our hard work to it.

@@ -12,6 +12,7 @@
 
 #include <MessageReader.h>
 
+
 // HACK: The ASIO awaitable header needs this to force CLion
 // into seeing awaitable<T>. Clangd seems to pick it up
 // fine but clion's internal engine seems to not make the
@@ -57,6 +58,7 @@ namespace ls {
 
 
 		MessageReader reader;
+
 	};
 
 } // namespace ls

@@ -24,10 +24,9 @@ namespace ls {
 		uint32_t typeCode{};
 
 		/**
-		 * Unknown. Could be padding, unless it isn't? Bustin In sets it to all zeros.
-		 * It seems to also allow 64bit typecodes too though.
+		 * High fourcc. Seems to only be used by responses.
 		 */
-		uint32_t unknown{};
+		uint32_t typeCodeHi{};
 
 		/**
 		 * The size of the payload, which immediately follows this structure.

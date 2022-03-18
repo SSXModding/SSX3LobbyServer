@@ -3,6 +3,9 @@ add_library(ls_server
 		BaseMessage.cpp
 		MessageReader.cpp
 		Server.cpp
+		Client.cpp
+
+		# TODO: DB
 
 		# message files
 		messages/PingMessage.cpp
