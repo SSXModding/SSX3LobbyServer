@@ -11,22 +11,41 @@
 #define SSX3LOBBYSERVER_CLIENT_H
 
 #include <Server.h>
-#include <deque>
 
 #include <boost/asio/steady_timer.hpp>
+#include <deque>
 
 namespace ls {
 
-struct Client {
+	struct Client : public std::enable_shared_from_this<Client> {
+		Client(tcp::socket socket, std::shared_ptr<Server> server);
 
-   private:
+		void Open();
 
-	asio::awaitable<void> ReaderCoro();
-	asio::awaitable<void> WriterCoro();
+		void Close();
 
-	std::deque<std::shared_ptr<MessageBase>> messageWriteQueue;
-};
+		/**
+		 * Add a message to the writer queue.
+		 */
+		void AddMessage(std::shared_ptr<MessageBase> message);
 
-}
+
+		uint32_t GetPing() const;
+		void SetPing(uint32_t pingMs);
+
+	   private:
+		asio::awaitable<void> ReaderCoro();
+		asio::awaitable<void> WriterCoro();
+
+		tcp::socket socket;
+
+
+		asio::steady_timer messageWriteTimer;
+		std::deque<std::shared_ptr<MessageBase>> messageWriteQueue;
+
+		std::shared_ptr<Server> server;
+	};
+
+} // namespace ls
 
 #endif // SSX3LOBBYSERVER_CLIENT_H

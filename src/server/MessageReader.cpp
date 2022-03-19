@@ -9,7 +9,6 @@
 
 #include "MessageReader.h"
 
-#include "WireMessageHeader.h"
 #include <byteswap.h>
 
 #include <cstring>
@@ -21,25 +20,29 @@ namespace ls {
 	// also taken from bustin in
 	constexpr static auto MAX_PAYLOAD_SIZE = (1024 * 1024) * 2;
 
-	void MessageReader::ReadMessage(const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
-		WireMessageHeader header;
-		std::vector<std::uint8_t> property_buf;
+	std::optional<WireMessageHeader> MessageReader::ReadHeader(const std::uint8_t* buf) {
+		WireMessageHeader ret;
 
-		if(buf.empty())
-			return;
+		if(buf == nullptr)
+			return std::nullopt;
 
 		// Read the message header
-		memcpy(&header, &buf[0], sizeof(WireMessageHeader));
+		memcpy(&ret, &buf[0], sizeof(WireMessageHeader));
 
 		// fix the endian on payload size
-		header.payloadSize = LSNetworkToHost32(header.payloadSize);
+		ret.payloadSize = LSNetworkToHost32(ret.payloadSize);
 
-		if(header.payloadSize > MAX_PAYLOAD_SIZE) {
+		if(ret.payloadSize > MAX_PAYLOAD_SIZE) {
 			// TODO: Probably close the client connection, or throw an exception
 			// 	to force the client to close.
-			return;
+			return std::nullopt;
 		}
 
+		return ret;
+	}
+
+	void MessageReader::ReadRestOfMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
+		std::vector<std::uint8_t> property_buffer;
 		auto message = ls::CreateMessageFromTypeCode(header.typeCode);
 #if 0
 		if(!message)
@@ -50,11 +53,10 @@ namespace ls {
 		if(header.payloadSize == 1 || header.payloadSize == 0)
 			return message->HandleMessage(server, client);
 
-		// Read in the property
-		property_buf.resize(header.payloadSize);
-		memcpy(&property_buf[0], &buf[sizeof(WireMessageHeader)], header.payloadSize);
-
-		message->ReadProperties(property_buf);
+		// Read in the property buffer.
+		property_buffer.resize(header.payloadSize);
+		memcpy(&property_buffer[0], &buf[sizeof(WireMessageHeader)], header.payloadSize);
+		message->ReadProperties(property_buffer);
 
 		message->HandleMessage(server, client);
 	}

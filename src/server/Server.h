@@ -13,26 +13,26 @@
 #include <MessageReader.h>
 
 
-// HACK: The ASIO awaitable header needs this to force CLion
-// into seeing awaitable<T>. Clangd seems to pick it up
-// fine but clion's internal engine seems to not make the
-// ASIO features header turn on co_await support, which
-// breaks stuff. :(.
-//
-// TODO: File a bug with jetbrains? I may actually do so
-// either that or wait until it hopefully isn't needed anymore.
+// CLion + C++20 coros don't mix well for some reason
+
 #ifdef __CLION_IDE_
-	#define GENERATING_DOCUMENTATION
+#define BOOST_ASIO_HAS_CO_AWAIT
+#define BOOST_ASIO_HAS_STD_COROUTINE
 #endif
 
 #include <boost/asio/awaitable.hpp>
 
-#ifdef __CLION_IDE_
-	#undef GENERATING_DOCUMENTATION
-#endif
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
 
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
+
+#include <boost/asio/read.hpp>
+#include <boost/asio/redirect_error.hpp>
+#include <boost/asio/write.hpp>
 
 namespace ls {
 
@@ -41,15 +41,18 @@ namespace ls {
 	using tcp = ip::tcp;
 
 	struct Server : public std::enable_shared_from_this<Server> {
-		Server(asio::io_context& ioc);
+		explicit Server(asio::io_context& ioc);
 
 		void Start();
 
+		void SendMessage(std::shared_ptr<MessageBase> message);
+
 	   private:
+		friend struct Client;
 		asio::io_context& ioc;
 
 
-		asio::awaitable<void> listener();
+		asio::awaitable<void> ListenerCoro(tcp::acceptor acceptor);
 
 		// TODO: maybe timer for stuff or keep alive
 		// if ~png is sent that much

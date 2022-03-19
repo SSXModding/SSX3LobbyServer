@@ -8,24 +8,32 @@
 //
 
 #include "Server.h"
+#include "Client.h"
 
-#include <boost/asio/detached.hpp>
-#include <boost/asio/co_spawn.hpp>
+#include <spdlog/spdlog.h>
+
 
 namespace ls {
 
+	constexpr auto BUDDY_PORT = 10998;
+
+	// Game connects to ps2ssx04.ea.com:11000
+	constexpr auto GAME_PORT = 11000;
+
 	Server::Server(asio::io_context& ioc)
 		: ioc(ioc) {
-
 	}
 
 	void Server::Start() {
-		// start listener(s) on specific ports
+		spdlog::info("Server started");
+		asio::co_spawn(ioc, shared_from_this()->ListenerCoro(tcp::acceptor { ioc, tcp::endpoint { tcp::v4(), GAME_PORT }, true }), asio::detached);
 	}
 
-
-	asio::awaitable<void> Server::listener() {
-
+	asio::awaitable<void> Server::ListenerCoro(tcp::acceptor acceptor) {
+		// TODO: catch exceptions
+		for(;;) {
+			std::make_shared<Client>(co_await acceptor.async_accept(asio::use_awaitable), shared_from_this())->Open();
+		}
 	}
 
-}
+} // namespace ls

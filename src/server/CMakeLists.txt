@@ -21,10 +21,12 @@ target_include_directories(ls_server PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 
 target_link_libraries(ls_server PRIVATE ls::common)
-target_link_libraries(ls_server PUBLIC Boost::system fmt::fmt)
+target_link_libraries(ls_server PUBLIC Boost::system fmt::fmt spdlog::spdlog)
 
 # ASIO flags
 target_compile_definitions(ls_server PUBLIC
+		-DSPDLOG_FMT_EXTERNAL=1
+
 		# No more io_service! No more io_context::work!
 		-DBOOST_ASIO_NO_DEPRECATED=1
 

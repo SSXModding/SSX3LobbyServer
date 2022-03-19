@@ -11,12 +11,16 @@
 #define SSX3LOBBYSERVER_MESSAGEREADER_H
 
 #include <BaseMessage.h>
+#include <WireMessageHeader.h>
+#include <optional>
 
 namespace ls {
 
 	struct MessageReader {
 
-		void ReadMessage(const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client);
+		std::optional<WireMessageHeader> ReadHeader(const std::uint8_t* buf);
+
+		void ReadRestOfMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client);
 
 	};
 
