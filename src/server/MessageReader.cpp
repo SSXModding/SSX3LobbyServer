@@ -41,8 +41,7 @@ namespace ls {
 		return ret;
 	}
 
-	void MessageReader::ReadRestOfMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
-		std::vector<std::uint8_t> property_buffer;
+	void MessageReader::ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
 		auto message = ls::CreateMessageFromTypeCode(header.typeCode);
 #if 0
 		if(!message)
@@ -54,9 +53,7 @@ namespace ls {
 			return message->HandleMessage(server, client);
 
 		// Read in the property buffer.
-		property_buffer.resize(header.payloadSize);
-		memcpy(&property_buffer[0], &buf[sizeof(WireMessageHeader)], header.payloadSize);
-		message->ReadProperties(property_buffer);
+		message->ReadProperties(buf);
 
 		message->HandleMessage(server, client);
 	}

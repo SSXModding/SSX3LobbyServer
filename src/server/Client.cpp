@@ -43,7 +43,7 @@ namespace ls {
 
 	asio::awaitable<void> Client::ReaderCoro() {
 		try {
-			std::vector<std::uint8_t> messageBuf;
+			std::vector<std::uint8_t> messagePayloadBuffer;
 
 			while(true) {
 				char header_buffer[sizeof(WireMessageHeader)];
@@ -62,15 +62,19 @@ namespace ls {
 				if(!header.has_value())
 					continue;
 
-				messageBuf.resize(header->payloadSize);
+				// TODO: I dunno if the property buf is actually null terminated,
+				// if it isn't we can probably remove this
 
-				n = co_await socket.async_read_some(asio::buffer(messageBuf), asio::use_awaitable);
-				if(n != header->payloadSize) {
-					spdlog::warn("Malformed payload");
+				messagePayloadBuffer.resize(header->payloadSize + 1);
+
+				n = co_await socket.async_read_some(asio::buffer(messagePayloadBuffer), asio::use_awaitable);
+
+				if(n != (header->payloadSize + 1)) {
+					spdlog::warn("Malformed payload (read {} bytes)", n);
 					continue;
 				}
 
-				server->reader.ReadRestOfMessage(*header, messageBuf, server, shared_from_this());
+				server->reader.ReadAndHandleMessage(*header, messagePayloadBuffer, server, shared_from_this());
 			}
 
 		} catch(std::exception& ex) {

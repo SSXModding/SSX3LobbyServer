@@ -39,7 +39,6 @@ namespace ls {
 
 		tcp::socket socket;
 
-
 		asio::steady_timer messageWriteTimer;
 		std::deque<std::shared_ptr<MessageBase>> messageWriteQueue;
 

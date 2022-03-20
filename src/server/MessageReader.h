@@ -20,7 +20,7 @@ namespace ls {
 
 		std::optional<WireMessageHeader> ReadHeader(const std::uint8_t* buf);
 
-		void ReadRestOfMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client);
+		void ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client);
 
 	};
 
