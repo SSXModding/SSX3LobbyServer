@@ -42,6 +42,7 @@ namespace ls {
 	}
 
 	void MessageReader::ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
+		// Create the message instance from the message factory
 		auto message = ls::CreateMessageFromTypeCode(header.typeCode);
 #if 0
 		if(!message)

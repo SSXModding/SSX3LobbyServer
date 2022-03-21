@@ -15,11 +15,17 @@
 #include <fmt/core.h>
 #include <byteswap.h>
 
+static ls::CofuSingleton<std::unordered_map<uint32_t, ls::detail::MessageFactory>> MessageFactoryMap;
+
 namespace ls {
+
 
 	namespace {
 
-		CofuSingleton<std::unordered_map<uint32_t, detail::MessageFactory>> MessageFactoryMap;
+		//std::unordered_map<uint32_t, detail::MessageFactory>& MessageFactoryMap() {
+		//	static std::unordered_map<uint32_t, detail::MessageFactory> map;
+		//	return map;
+		//}
 
 		std::string FormatKeyVal(std::string_view key, std::string_view value) {
 			return fmt::format("{}={}\n", key, value);
@@ -32,7 +38,7 @@ namespace ls {
 			auto& map = MessageFactoryMap();
 			auto it = map.find(typeCode);
 
-			if(it == map.end())
+			if(it != map.end())
 				return;
 
 			map.insert({ typeCode, factory });
@@ -62,6 +68,8 @@ namespace ls {
 	};
 
 	std::shared_ptr<MessageBase> CreateMessageFromTypeCode(uint32_t TypeCode) {
+		auto* fccbytes = ((uint8_t*)&TypeCode);
+
 		auto& map = MessageFactoryMap();
 		auto it = map.find(TypeCode);
 

@@ -10,12 +10,26 @@
 #ifndef SSX3LOBBYSERVER_BASEMESSAGE_H
 #define SSX3LOBBYSERVER_BASEMESSAGE_H
 
+#include <fourcc.h>
+
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <memory>
 
-#include <fourcc.h>
+// Some notes:
+// - The current factory/""reflection"" system heap allocs EVERY parsed message.
+//		Should an adapter Allocator like the PMR Allocators that allocates via a memory pool be used or something?
+//		(don't really need performance, but we don't want spam parsed messages to DoS the service or require more resources than needed.)
+//
+// 		We could maybe also do locked singleton access to a message, which would reduce allocations considerably but maybe
+//		make program logic a bit more difficult (as well as serializing access, making the general outbound performance about the same
+//		as if the server were single-threaded, if not worse. BUT, less allocs!)
+//
+// - The current system needs a hack on Linux to work, which I don't really like.
+// 		An alternative I've thought is to provide a ls::InitMessages() API which calls all the internal init routines.
+//		This would work but is more manual (an error-prone point!) and a little grodier. Still, I'm considering it.
+//
 
 namespace ls {
 
@@ -27,14 +41,12 @@ namespace ls {
 	 * Base class for lobby messages.
 	 */
 	struct MessageBase {
-
 		virtual ~MessageBase() = default;
 
 		/**
 		 * Serialize this message to a output buffer.
 		 */
 		void Serialize(std::vector<std::uint8_t>& outBuf) const;
-
 
 		/**
 		 * Called when the message parsing is finished. Base version does nothing.
@@ -55,7 +67,6 @@ namespace ls {
 
 	   protected:
 		friend struct MessageReader;
-
 
 		/**
 		 * Read the serialized properties from a buffer.
@@ -78,14 +89,14 @@ namespace ls {
 	};
 
 	namespace detail {
-		using MessageFactory = std::shared_ptr<MessageBase>(*)();
+		using MessageFactory = std::shared_ptr<MessageBase> (*)();
 		void RegisterMessage(uint32_t typeCode, MessageFactory factory);
 
 		// Registers a message into the internal map.
-		template<class T>
+		template <class T, uint32_t TypeCode>
 		struct MessageRegistrar {
-			MessageRegistrar(uint32_t TypeCode) {
-				detail::RegisterMessage(TypeCode, &MessageRegistrar::createMessage);
+			MessageRegistrar() {
+				RegisterMessage(TypeCode, &MessageRegistrar<T, TypeCode>::createMessage);
 			}
 
 		   private:
@@ -95,19 +106,32 @@ namespace ls {
 			}
 		};
 
-#define LSRegisterMessage(TypeCode, T) static ls::detail::MessageRegistrar<T> __registrar__##T(TypeCode);
-
 	}
 
-	/**
-	 * Create a message from type code.
-	 * Essentially a very very limited form of "reflection".
-	 *
-	 * Returns a "debug" message or nullptr if the factory collection
-	 * doesn't have the specific type code in it.
-	 */
-	std::shared_ptr<MessageBase> CreateMessageFromTypeCode(uint32_t TypeCode);
+	#define LSRegisterMessage(TypeCode, T) ls::detail::MessageRegistrar<T, TypeCode> __registrar__##T;
 
-}
+	// hand-specialized version, used for testing.
+	/*
+#define LSRegisterMessage(TypeCode, T)                         \
+	static std::shared_ptr<ls::MessageBase> make__##T() {          \
+		return std::make_shared<T>();                          \
+	}                                                          \
+	static struct local_register__##T {                        \
+		local_register__##T() {                                \
+			ls::detail::RegisterMessage(TypeCode, &make__##T); \
+		}                                                      \
+	} register_##T;
+	*/
+
+		/**
+		 * Create a message from type code.
+		 * Essentially a very very limited form of "reflection".
+		 *
+		 * Returns a "debug" message or nullptr if the factory collection
+		 * doesn't have the specific type code in it.
+		 */
+		std::shared_ptr<MessageBase> CreateMessageFromTypeCode(uint32_t TypeCode);
+
+	} // namespace detail
 
 #endif // SSX3LOBBYSERVER_BASEMESSAGE_H

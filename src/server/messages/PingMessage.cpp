@@ -8,14 +8,16 @@
 //
 
 #include "BaseMessage.h"
-// fully defined client.
+#include "Client.h"
+
+#include <spdlog/spdlog.h>
 
 namespace ls {
-
-	constexpr static auto TYPE_CODE = ls::FourCCValue("~png");
+	constexpr static auto TYPE_CODE = ls::FourCCValue("test");
 
 	struct PingMessage : public MessageBase {
-		PingMessage() : MessageBase() {
+		PingMessage()
+			: MessageBase() {
 			typeCode = TYPE_CODE;
 		}
 
@@ -24,11 +26,11 @@ namespace ls {
 		}
 
 		void HandleMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) override {
-			// in debug probably assert ~png typecode???
+			// client->Ping = ping calc here...
 
-			//client->Ping = ping calc here...
+			spdlog::info("PingMessage::HandleMessage()");
 		}
 	};
 
 	LSRegisterMessage(TYPE_CODE, PingMessage);
-}
+} // namespace ls

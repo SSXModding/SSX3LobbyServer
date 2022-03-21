@@ -16,10 +16,24 @@
 
 namespace ls {
 
+	/**
+	 * Reader for Dirtysock messages.
+	 */
 	struct MessageReader {
 
+		/**
+		 * Read the header of a dirtysock message.
+		 * \param[in] buf Header buffer.
+		 * \return A header on success, nullopt otherwise.
+		 */
 		std::optional<WireMessageHeader> ReadHeader(const std::uint8_t* buf);
 
+		/**
+		 * Read the rest of and then handle (dispatching to the HandleMessage() function) a received message.
+		 *
+		 * \param[in] header message header.
+		 * \param[in] buf Property buffer.
+		 */
 		void ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client);
 
 	};

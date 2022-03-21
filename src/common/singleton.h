@@ -19,11 +19,20 @@ namespace ls {
 	struct CofuSingleton {
 
 		T& operator()() {
-			static T t;
+			if(!initalized) {
+				initalized = true;
+				return *new (&t) T;
+			}
+
 			return t;
 		}
-
+	   private:
+		static T t;
+		bool initalized{false};
 	};
+
+	template <class T>
+	T CofuSingleton<T>::t;
 }
 
 #endif // SSX3LOBBYSERVER_SINGLETON_H
