@@ -9,8 +9,8 @@ set_target_properties(ssx3lobbyserver PROPERTIES
 		CXX_STANDARD_REQUIRED ON
 )
 
-target_link_libraries(ssx3lobbyserver PRIVATE ls::common
-		# TODO: this is laughably platform specific, and we can probably find a better way.
-		# Maybe a InitMessages() in ls:: which then calls private initalizer functions?
-		"-Wl,--whole-archive" ls::server "-Wl,--no-whole-archive"
-		Boost::program_options)
+target_link_libraries(ssx3lobbyserver PRIVATE
+		ls::common
+		ls::server
+		Boost::program_options
+)

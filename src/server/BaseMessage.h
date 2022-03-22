@@ -106,32 +106,27 @@ namespace ls {
 			}
 		};
 
-	}
+	} // namespace detail
 
-	#define LSRegisterMessage(TypeCode, T) ls::detail::MessageRegistrar<T, TypeCode> __registrar__##T;
+#define LSRegisterMessage(TypeCode, T) ls::detail::RegisterMessage(TypeCode, []() -> std::shared_ptr<ls::MessageBase> { return std::make_shared<T>(); });
 
 	// hand-specialized version, used for testing.
-	/*
-#define LSRegisterMessage(TypeCode, T)                         \
-	static std::shared_ptr<ls::MessageBase> make__##T() {          \
-		return std::make_shared<T>();                          \
-	}                                                          \
-	static struct local_register__##T {                        \
-		local_register__##T() {                                \
-			ls::detail::RegisterMessage(TypeCode, &make__##T); \
-		}                                                      \
-	} register_##T;
-	*/
 
-		/**
-		 * Create a message from type code.
-		 * Essentially a very very limited form of "reflection".
-		 *
-		 * Returns a "debug" message or nullptr if the factory collection
-		 * doesn't have the specific type code in it.
-		 */
-		std::shared_ptr<MessageBase> CreateMessageFromTypeCode(uint32_t TypeCode);
+	/**
+	 * Initalize all messages.
+	 */
+	void InitMessages();
 
-	} // namespace detail
+	/**
+	 * Create a message from type code.
+	 * Essentially a very very limited form of "reflection".
+	 *
+	 * Returns a "debug" message or nullptr if the factory collection
+	 * doesn't have the specific type code in it.
+	 */
+	std::shared_ptr<MessageBase>
+	CreateMessageFromTypeCode(uint32_t TypeCode);
+
+} // namespace ls
 
 #endif // SSX3LOBBYSERVER_BASEMESSAGE_H

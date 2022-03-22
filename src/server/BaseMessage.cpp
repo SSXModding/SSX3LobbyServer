@@ -8,31 +8,22 @@
 //
 
 #include "BaseMessage.h"
+
+#include <byteswap.h>
+#include <fmt/core.h>
+#include <singleton.h>
+#include <spdlog/spdlog.h>
+
 #include "WireMessageHeader.h"
 
-#include <singleton.h>
-
-#include <fmt/core.h>
-#include <byteswap.h>
-
-static ls::CofuSingleton<std::unordered_map<uint32_t, ls::detail::MessageFactory>> MessageFactoryMap;
+// External initializers for messages.
+void InitPing();
 
 namespace ls {
 
-
-	namespace {
-
-		//std::unordered_map<uint32_t, detail::MessageFactory>& MessageFactoryMap() {
-		//	static std::unordered_map<uint32_t, detail::MessageFactory> map;
-		//	return map;
-		//}
-
-		std::string FormatKeyVal(std::string_view key, std::string_view value) {
-			return fmt::format("{}={}\n", key, value);
-		}
-	} // namespace
-
 	namespace detail {
+
+		static ls::CofuSingleton<std::unordered_map<uint32_t, ls::detail::MessageFactory>> MessageFactoryMap;
 
 		void RegisterMessage(uint32_t typeCode, MessageFactory factory) {
 			auto& map = MessageFactoryMap();
@@ -46,32 +37,36 @@ namespace ls {
 
 	} // namespace detail
 
-	/**
-	 * Internal message used when there's no assigned
-	 * handler for a message. Only used for debugging.
-	 * May be phased out when everything's all working.
-	 */
-	struct DebugMessage : MessageBase {
-		explicit DebugMessage(uint32_t TypeCode) {
-			this->typeCode = TypeCode;
-		}
-
-		void HandleMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) override {
-			auto* fccbytes = ((uint8_t*)&typeCode);
-
-			printf("typecode: %c%c%c%c\n", fccbytes[0], fccbytes[1], fccbytes[2], fccbytes[3]);
-			printf("properties:\n");
-			for(auto [key, value] : properties) {
-				printf("\t%s : %s\n", key.c_str(), value.c_str());
-			}
-		}
-	};
+	void InitMessages() {
+		InitPing();
+	}
 
 	std::shared_ptr<MessageBase> CreateMessageFromTypeCode(uint32_t TypeCode) {
 		auto* fccbytes = ((uint8_t*)&TypeCode);
 
-		auto& map = MessageFactoryMap();
+		auto& map = detail::MessageFactoryMap();
 		auto it = map.find(TypeCode);
+
+		/**
+		 * Internal message type used when there's no assigned
+		 * handler for a message. Only used for debugging.
+		 * May be phased out when everything's all working.
+		 */
+		struct DebugMessage : MessageBase {
+			explicit DebugMessage(uint32_t TypeCode) {
+				this->typeCode = TypeCode;
+			}
+
+			void HandleMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) override {
+				auto* fccbytes = ((uint8_t*)&typeCode);
+
+				spdlog::info("fourcc lo: \"{:c}{:c}{:c}{:c}\"", fccbytes[0], fccbytes[1], fccbytes[2], fccbytes[3]);
+				spdlog::info("properties:");
+
+				for(auto [key, value] : properties)
+					spdlog::info("{}: {}", key, value);
+			}
+		};
 
 		if(it == map.end())
 #if 1
@@ -90,7 +85,7 @@ namespace ls {
 
 		// Serialize all properties.
 		for(auto [key, value] : properties)
-			total += FormatKeyVal(key, value);
+			total += fmt::format("{}={}\n", key, value);
 
 		// Null terminate the property data.
 		total.push_back('\0');
@@ -161,10 +156,9 @@ namespace ls {
 
 			Index++;
 		}
-
 	}
 
-	void MessageBase::HandleMessage(std::shared_ptr<Server> server,std::shared_ptr<Client> client) {
+	void MessageBase::HandleMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
 	}
 
 	void MessageBase::CreateDefaultProperties() {

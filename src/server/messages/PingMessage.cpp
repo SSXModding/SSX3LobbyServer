@@ -7,30 +7,30 @@
 // Text is provided in LICENSE.
 //
 
+#include <spdlog/spdlog.h>
+
 #include "BaseMessage.h"
 #include "Client.h"
 
-#include <spdlog/spdlog.h>
+constexpr static auto TYPE_CODE = ls::FourCCValue("test");
 
-namespace ls {
-	constexpr static auto TYPE_CODE = ls::FourCCValue("test");
+struct PingMessage : public ls::MessageBase {
+	PingMessage()
+		: MessageBase() {
+		typeCode = TYPE_CODE;
+	}
 
-	struct PingMessage : public MessageBase {
-		PingMessage()
-			: MessageBase() {
-			typeCode = TYPE_CODE;
-		}
+	void CreateDefaultProperties() override {
+		properties["TIME"] = "";
+	}
 
-		void CreateDefaultProperties() override {
-			properties["TIME"] = "";
-		}
+	void HandleMessage(std::shared_ptr<ls::Server> server, std::shared_ptr<ls::Client> client) override {
+		// client->Ping = ping calc here...
 
-		void HandleMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) override {
-			// client->Ping = ping calc here...
+		spdlog::info("PingMessage::HandleMessage()");
+	}
+};
 
-			spdlog::info("PingMessage::HandleMessage()");
-		}
-	};
-
+void InitPing() {
 	LSRegisterMessage(TYPE_CODE, PingMessage);
-} // namespace ls
+}
