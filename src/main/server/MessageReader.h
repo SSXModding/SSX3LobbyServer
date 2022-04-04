@@ -29,7 +29,7 @@ namespace ls {
 		std::optional<WireMessageHeader> ReadHeader(const std::uint8_t* buf);
 
 		/**
-		 * Read the rest of and then handle (dispatching to the HandleMessage() function) a received message.
+		 * Read the rest of and then handle (dispatching to the HandleClientMessage() function) a received message.
 		 *
 		 * \param[in] header message header.
 		 * \param[in] buf Property buffer.

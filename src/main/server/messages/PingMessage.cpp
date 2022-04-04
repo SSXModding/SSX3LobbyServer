@@ -12,7 +12,7 @@
 #include "BaseMessage.h"
 #include "Client.h"
 
-constexpr static auto TYPE_CODE = ls::FourCCValue("test");
+constexpr static auto TYPE_CODE = ls::FourCCValue("~png");
 
 struct PingMessage : public ls::MessageBase {
 	PingMessage()
@@ -24,13 +24,8 @@ struct PingMessage : public ls::MessageBase {
 		properties["TIME"] = "";
 	}
 
-	void HandleMessage(std::shared_ptr<ls::Server> server, std::shared_ptr<ls::Client> client) override {
-		// client->Ping = ping calc here...
-
-		spdlog::info("PingMessage::HandleMessage()");
+	void HandleClientMessage(std::shared_ptr<ls::Server> server, std::shared_ptr<ls::Client> client) override {
 	}
 };
 
-void InitPing() {
-	LSRegisterMessage(TYPE_CODE, PingMessage);
-}
+LSRegisterMessage(TYPE_CODE, PingMessage);

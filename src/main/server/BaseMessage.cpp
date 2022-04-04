@@ -16,8 +16,6 @@
 
 #include "WireMessageHeader.h"
 
-// External initializers for messages.
-void InitPing();
 
 namespace ls {
 
@@ -37,10 +35,6 @@ namespace ls {
 
 	} // namespace detail
 
-	void InitMessages() {
-		InitPing();
-	}
-
 	std::shared_ptr<MessageBase> CreateMessageFromTypeCode(uint32_t TypeCode) {
 		auto* fccbytes = ((uint8_t*)&TypeCode);
 
@@ -57,7 +51,7 @@ namespace ls {
 				this->typeCode = TypeCode;
 			}
 
-			void HandleMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) override {
+			void HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) override {
 				auto* fccbytes = ((uint8_t*)&typeCode);
 
 				spdlog::info("fourcc lo: \"{:c}{:c}{:c}{:c}\"", fccbytes[0], fccbytes[1], fccbytes[2], fccbytes[3]);
@@ -158,7 +152,7 @@ namespace ls {
 		}
 	}
 
-	void MessageBase::HandleMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
+	void MessageBase::HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
 	}
 
 	void MessageBase::CreateDefaultProperties() {

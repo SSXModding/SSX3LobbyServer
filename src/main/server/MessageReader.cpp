@@ -51,12 +51,12 @@ namespace ls {
 
 		// Just handle the message if there's no property data.
 		if(header.payloadSize == 1 || header.payloadSize == 0)
-			return message->HandleMessage(server, client);
+			return message->HandleClientMessage(server, client);
 
 		// Read in the property buffer.
 		message->ReadProperties(buf);
 
-		message->HandleMessage(server, client);
+		message->HandleClientMessage(server, client);
 	}
 
 } // namespace ls

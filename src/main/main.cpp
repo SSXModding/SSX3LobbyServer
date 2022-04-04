@@ -12,10 +12,6 @@ int main(int argc, char** argv) {
 	ls::Arguments a;
 	a.Process(argc, argv);
 
-	// Initialize messages before doing anything with the server.
-	// We could use static initializers, but they seem to be finicky when
-	// using static libs on different platforms.
-	ls::InitMessages();
 
 #if 1
 	boost::asio::io_context ioc(1);

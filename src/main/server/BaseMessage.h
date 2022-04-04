@@ -23,7 +23,7 @@
 //		(don't really need performance, but we don't want spam parsed messages to DoS the service or require more resources than needed.)
 //
 // 		We could maybe also do locked singleton access to a message, which would reduce allocations considerably but maybe
-//		make program logic a bit more difficult (as well as serializing access, making the general outbound performance about the same
+//		make program logic a bit more difficult (as well as serializing access, making the general outbound performance possibly about the same
 //		as if the server were single-threaded, if not worse. BUT, less allocs!)
 //
 // - The current system needs a hack on Linux to work, which I don't really like.
@@ -52,7 +52,7 @@ namespace ls {
 		 * Called when the message parsing is finished. Base version does nothing.
 		 * Override to do message specific handling.
 		 */
-		virtual void HandleMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client);
+		virtual void HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client);
 
 		/**
 		 * Call this when creating a response message to immediately
@@ -108,14 +108,8 @@ namespace ls {
 
 	} // namespace detail
 
-#define LSRegisterMessage(TypeCode, T) ls::detail::RegisterMessage(TypeCode, []() -> std::shared_ptr<ls::MessageBase> { return std::make_shared<T>(); });
-
-	// hand-specialized version, used for testing.
-
-	/**
-	 * Initalize all messages.
-	 */
-	void InitMessages();
+#define LSRegisterMessage(TypeCode, T) static ls::detail::MessageRegistrar<T, TypeCode> __registrar_##T; \
+	auto* __hack_forcedep__##T = &__registrar_##T;
 
 	/**
 	 * Create a message from type code.
