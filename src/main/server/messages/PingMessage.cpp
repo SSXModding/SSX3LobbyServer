@@ -9,7 +9,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include "BaseMessage.h"
+#include "MessageBase.h"
 #include "Client.h"
 
 constexpr static auto TYPE_CODE = ls::FourCCValue("~png");

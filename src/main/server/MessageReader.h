@@ -10,7 +10,7 @@
 #ifndef SSX3LOBBYSERVER_MESSAGEREADER_H
 #define SSX3LOBBYSERVER_MESSAGEREADER_H
 
-#include <BaseMessage.h>
+#include <MessageBase.h>
 #include <WireMessageHeader.h>
 #include <optional>
 

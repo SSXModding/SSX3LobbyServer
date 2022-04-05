@@ -1,20 +1,23 @@
 add_executable(ssx3lobbyserver
+
+		# Configuration code
 		config/ConfigStore.cpp
-
 		config/backends/CommandLineConfigBackend.cpp
-		main.cpp
 
-		# Server stuff
+		# Server code
 		server/AsioImpl.cpp
-		server/BaseMessage.cpp
+		server/MessageBase.cpp
 		server/MessageReader.cpp
 		server/Server.cpp
 		server/Client.cpp
 
-		# TODO: DB
+		# TODO: DB/model
 
-		# message files
+		# message classes/handlers
 		server/messages/PingMessage.cpp
+
+		# main entry
+		main.cpp
 )
 
 set_target_properties(ssx3lobbyserver PROPERTIES

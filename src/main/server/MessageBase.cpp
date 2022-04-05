@@ -7,7 +7,7 @@
 // Text is provided in LICENSE.
 //
 
-#include "BaseMessage.h"
+#include "MessageBase.h"
 
 #include <byteswap.h>
 #include <fmt/core.h>
