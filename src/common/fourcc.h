@@ -22,6 +22,8 @@ namespace ls {
 		return (fourCc[3] << 24) | (fourCc[2] << 16) | (fourCc[1] << 8) | fourCc[0];
 	}
 
+	// TODO: 64-bit version which returns a u64 (if required?)
+
 }
 
 #endif // SSX3LOBBYSERVER_FOURCC_H

@@ -3,7 +3,7 @@
 
 CREATE TABLE "Users" (
 	"Id"	INTEGER NOT NULL, -- UID
-	"Username"	INTEGER NOT NULL,
+	"Username"	TEXT NOT NULL,
 	"Email" TEXT NOT NULL,
 	"PasswdHash" TEXT NOT NULL,
 
@@ -28,6 +28,7 @@ CREATE TABLE "UserPersonas" (
 	PRIMARY KEY("Id")
 );
 
+-- TODO the game is WAY more verbose about this..
 CREATE TABLE "ScoresTable" (
 	"UserId" INTEGER NOT NULL, -- Game sends this as the username, but to save db space map it as the uid
 	"GameMode" INTEGER NOT NULL, -- avoids maintaining multiple tables, we can just do `select * from scorestable where GameMode = bla`

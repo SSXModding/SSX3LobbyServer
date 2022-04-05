@@ -7,26 +7,28 @@
 // Text is provided in LICENSE.
 //
 
-#include "Arguments.h"
+#include "CommandLineConfigBackend.h"
 
 #include <boost/asio/version.hpp>
-#include <boost/version.hpp>
-
 #include <boost/program_options.hpp>
+#include <boost/version.hpp>
 #include <iostream>
 
 namespace po = boost::program_options;
 
 namespace ls {
 
-	void Arguments::Process(int argc, char** argv) {
+	CommandLineConfigBackend::CommandLineConfigBackend(ConfigStore& store)
+		: configStore(store) {
+	}
+
+	void CommandLineConfigBackend::Process(int argc, char** argv) {
 		po::options_description desc("SSX 3 Lobby Server - Options");
 		po::variables_map vm;
 		try {
 			// clang-format off
 			desc.add_options()
-				("listen,l", po::value<std::string>(&listenAddress)->default_value("0.0.0.0"), "The address to listen on. Defaults to all interfaces.")
-				//("port,p", po::value<int>(&port)->required(), "The port to listen on")
+				("listen,l", po::value<std::string>(), "The address to listen on. Defaults to all interfaces.")
 				("version,V", "Display server versions")
 				("verbose,v", "Enable verbose log messages (for debugging purposes)")
 				("help,h", "Show this help");
@@ -49,6 +51,9 @@ namespace ls {
 				std::exit(0);
 			}
 
+			if(vm.count("listen"))
+				configStore.SetValue("listen_address", vm["listen"].as<std::string>());
+
 			po::notify(vm);
 		} catch(boost::program_options::required_option::error& e) {
 			std::cerr << "Error: " << e.what() << '\n';
@@ -62,7 +67,4 @@ namespace ls {
 		}
 	}
 
-	const std::string& Arguments::GetListenAddress() const {
-		return listenAddress;
-	}
-}
+} // namespace ls

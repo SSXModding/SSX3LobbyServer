@@ -45,7 +45,7 @@ namespace ls {
 
 		void Start();
 
-		void SendMessage(std::shared_ptr<MessageBase> message);
+		void Stop(); // TODO: for clean shutdowns
 
 	   private:
 		friend struct Client;

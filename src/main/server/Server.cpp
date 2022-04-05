@@ -30,7 +30,7 @@ namespace ls {
 	}
 
 	asio::awaitable<void> Server::ListenerCoro(tcp::acceptor acceptor) {
-		// TODO: catch exceptions
+		// TODO: catch exceptions (so we can keep going gracefully)
 		for(;;) {
 			std::make_shared<Client>(co_await acceptor.async_accept(asio::use_awaitable), shared_from_this())->Open();
 		}

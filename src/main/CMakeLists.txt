@@ -1,5 +1,7 @@
 add_executable(ssx3lobbyserver
-		Arguments.cpp
+		config/ConfigStore.cpp
+
+		config/backends/CommandLineConfigBackend.cpp
 		main.cpp
 
 		# Server stuff
@@ -29,6 +31,9 @@ target_link_libraries(ssx3lobbyserver PRIVATE
 		Boost::program_options
 )
 
+target_include_directories(ssx3lobbyserver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+# FIXME: remove
 target_include_directories(ssx3lobbyserver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/server)
 
 target_compile_definitions(ssx3lobbyserver PUBLIC

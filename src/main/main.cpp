@@ -6,21 +6,27 @@
 #include <Server.h>
 
 #include <iostream>
-#include "Arguments.h"
+
+#include <config/ConfigStore.h>
+#include <config/backends/CommandLineConfigBackend.h>
+
+/**
+ * The server-wide global instance of the config store.
+ */
+ls::ConfigStore gConfigStore;
 
 int main(int argc, char** argv) {
-	ls::Arguments a;
-	a.Process(argc, argv);
+	// other backends. priority pretty much will be last backend to set the value
+	ls::CommandLineConfigBackend clibackend(gConfigStore);
 
+	clibackend.Process(argc, argv);
 
-#if 1
 	boost::asio::io_context ioc(1);
 
 	auto server = std::make_shared<ls::Server>(ioc);
 	server->Start();
 
 	ioc.run();
-#endif
 
 #if 0 // TODO: move to catch2 tests
 	std::vector<std::uint8_t> buf;
