@@ -16,7 +16,6 @@
 
 #include "WireMessageHeader.h"
 
-
 namespace ls {
 
 	namespace detail {
@@ -106,49 +105,64 @@ namespace ls {
 		std::string key;
 		std::string val;
 
-		uint32_t Index = 0;
+		uint32_t inputIndex = 0;
 
-		// true - we're parsing the key
-		// false- we're parsing the value
-		bool InKey = true;
+		// state of the reader state machine (see below)
+		enum class ReaderState {
+			InKey,
+			InValue
+		} state{ReaderState::InKey};
 
-		// Parse all properties.
-		while(Index != inBuf.size()) {
-			if(inBuf[Index] == '=' && InKey) {
-				InKey = false;
-				Index++;
-				continue;
+		// Parse all properties, using a relatively simple state machine.
+		//
+		// State transition mappings:
+		// = - from key to value state (if in key state)
+		// \n - from value to key state (if in value state)
+		//
+
+		while(inputIndex != inBuf.size()) {
+			switch(inBuf[inputIndex]) {
+
+				case '=':
+					if(state == ReaderState::InKey) {
+						state = ReaderState::InValue;
+						break;
+					} else {
+						// If we're in the value state, we're allowed to nest = signs, I think.
+						val += inBuf[inputIndex];
+					}
+					break;
+
+				case '\n':
+					if(state == ReaderState::InValue) {
+						printf("state transition - to key\n");
+						properties[key] = val;
+						state = ReaderState::InKey;
+						key.clear();
+						val.clear();
+						break;
+					}
+					break;
+
+				default:
+					switch(state) {
+						case ReaderState::InKey:
+							key += inBuf[inputIndex];
+							break;
+						case ReaderState::InValue:
+							// Skip past quotation marks.
+							// I dunno if it's really needed.
+							// (For reference: SSX3 Dirtysock does the same thing, even including ').
+							if(inBuf[inputIndex] == '\"')
+								break;
+
+							val += inBuf[inputIndex];
+							break;
+					}
+					break;
 			}
 
-			if(inBuf[Index] == '\n' && !InKey) {
-				properties[key] = val;
-
-				// clear state and reset state to read the key again
-				key.clear();
-				val.clear();
-				InKey = true;
-
-				Index++;
-				continue;
-			}
-
-			// Write to the appropriate value for the
-			// current state.
-			if(InKey)
-				key += inBuf[Index];
-			else {
-				// Skip past quotation marks. Breakin in does this,
-				// I dunno if it's really needed.
-				// (For reference: SSX3 Dirtysock does the same thing, even including ').
-				if(inBuf[Index] == '\"') {
-					Index++;
-					continue;
-				}
-
-				val += inBuf[Index];
-			}
-
-			Index++;
+			inputIndex++;
 		}
 	}
 

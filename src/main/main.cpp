@@ -30,13 +30,8 @@ int main(int argc, char** argv) {
 
 	clibackend.Process(argc, argv);
 
-	boost::asio::io_context ioc(1);
 
-	auto server = std::make_shared<ls::Server>(ioc);
-	server->Start();
-
-	ioc.run();
-
+	// Garbage testcase for (de)serialization
 #if 0 // TODO: move to catch2 tests
 	std::vector<std::uint8_t> buf;
 
@@ -51,7 +46,24 @@ int main(int argc, char** argv) {
 	msg->Serialize(buf);
 
 	//printf("DEBUG: buf len is %lu\n", buf.size());
-	std::cout.write((const char*)&buf[0], buf.size());
+	//std::cout.write((const char*)&buf[0], buf.size());
+
+	ls::MessageReader reader;
+	auto h = reader.ReadHeader(&buf[0]);
+	if(!h.has_value()) {
+		std::cout << "fuck\n";
+	} else {
+		reader.ReadAndHandleMessage(*h, {buf.begin() + sizeof(ls::WireMessageHeader), buf.end()}, nullptr, nullptr);
+	}
+
 #endif
+
+	boost::asio::io_context ioc(1);
+
+	auto server = std::make_shared<ls::Server>(ioc);
+	server->Start();
+
+	ioc.run();
+
 	return 0;
 }
