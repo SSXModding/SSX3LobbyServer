@@ -41,7 +41,7 @@ namespace ls {
 		return ret;
 	}
 
-	void MessageReader::ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
+	bool MessageReader::ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
 		// Create the message instance from the message factory
 		auto message = ls::CreateMessageFromTypeCode(header.typeCode);
 #if 0
@@ -50,13 +50,18 @@ namespace ls {
 #endif
 
 		// Just handle the message if there's no property data.
-		if(header.payloadSize == 1 || header.payloadSize == 0)
-			return message->HandleClientMessage(server, client);
+		if(header.payloadSize == 1 || header.payloadSize == 0) {
+			message->HandleClientMessage(server, client);
+			return true;
+		}
 
 		// Read in the property buffer.
-		message->ReadProperties(buf);
+		// Fail if this fails
+		if(!message->ReadProperties(buf))
+			return false;
 
 		message->HandleClientMessage(server, client);
+		return true;
 	}
 
 } // namespace ls

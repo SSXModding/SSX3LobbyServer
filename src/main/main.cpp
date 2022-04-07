@@ -7,6 +7,7 @@
 // Text is provided in LICENSE.
 //
 
+// Includes for debug code.
 #ifndef NDEBUG
 	#include <boost/core/demangle.hpp>
 #endif
@@ -16,8 +17,8 @@
 #include <Server.h>
 #include <spdlog/spdlog.h>
 
+// Includes for test code
 #ifdef TEST
-
 	#include <MessageBase.h>
 	#include <MessageReader.h>
 	#include <fourcc.h>
@@ -28,14 +29,8 @@
  */
 ls::ConfigStore gConfigStore;
 
-int main(int argc, char** argv) {
-	// other backends. priority pretty much will be last backend to set the value
-	ls::CommandLineConfigBackend clibackend(gConfigStore);
-
-	clibackend.Process(argc, argv);
-
-	// Garbage testcase for (de)serialization
-#ifdef TEST // TODO: move to catch2 tests
+#ifdef TEST
+bool SerializeTest() {
 	std::vector<std::uint8_t> buf;
 
 	auto msg = ls::CreateMessageFromTypeCode(ls::FourCCValue("test"));
@@ -54,10 +49,31 @@ int main(int argc, char** argv) {
 	ls::MessageReader reader;
 	auto h = reader.ReadHeader(&buf[0]);
 	if(!h.has_value()) {
-		std::cout << "fuck\n";
+		std::cout << "header parse failed\n";
+		return false;
 	} else {
-		reader.ReadAndHandleMessage(*h, { buf.begin() + sizeof(ls::WireMessageHeader), buf.end() }, nullptr, nullptr);
+		if(!reader.ReadAndHandleMessage(*h, { buf.begin() + sizeof(ls::WireMessageHeader), buf.end() }, nullptr, nullptr)) {
+			std::cout << "reader parse failed. :(\n";
+			return false;
+		}
+		return true;
 	}
+}
+#endif
+
+int main(int argc, char** argv) {
+	// Initialize and run all configuration backends.
+	// priority pretty much will be last backend to set the value, where:
+	//  - cli (so we can choose an alternative config file)
+	// - toml (if an option wasnt set by cli)
+
+	ls::CommandLineConfigBackend clibackend(gConfigStore);
+
+	clibackend.Process(argc, argv);
+
+	// Garbage testcase for (de)serialization
+#ifdef TEST // TODO: move to catch2 tests
+	return (SerializeTest() == true);
 #endif
 
 	boost::asio::io_context ioc(1);

@@ -8,15 +8,13 @@
 //
 
 #include "Server.h"
-#include "Client.h"
 
 #include <config/ConfigStore.h>
-
 #include <spdlog/spdlog.h>
 
+#include "Client.h"
 
 extern ls::ConfigStore gConfigStore;
-
 
 namespace ls {
 

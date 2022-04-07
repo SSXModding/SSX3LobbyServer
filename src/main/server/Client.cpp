@@ -43,22 +43,24 @@ namespace ls {
 
 	asio::awaitable<void> Client::ReaderCoro() {
 		try {
+			char messageHeaderBuffer[sizeof(WireMessageHeader)];
 			std::vector<std::uint8_t> messagePayloadBuffer;
 
 			while(true) {
-				char header_buffer[sizeof(WireMessageHeader)];
-				auto n = co_await socket.async_read_some(asio::buffer(header_buffer), asio::use_awaitable);
+				auto n = co_await socket.async_read_some(asio::buffer(messageHeaderBuffer), asio::use_awaitable);
 
 				if(n == 0)
 					continue;
 
 				// give up parsing this message
 				if(n != sizeof(WireMessageHeader)) {
-					spdlog::warn("Malformed message (read {} bytes)", n);
+					spdlog::warn("Malformed message (read {} bytes, when header is {} bytes)", n, sizeof(WireMessageHeader));
 					continue;
 				}
 
-				auto header = server->reader.ReadHeader((const uint8_t*)&header_buffer[0]);
+				auto header = server->reader.ReadHeader((const uint8_t*)&messageHeaderBuffer[0]);
+
+				// Discard if the message header could not be read.
 				if(!header.has_value())
 					continue;
 
@@ -70,11 +72,15 @@ namespace ls {
 				n = co_await socket.async_read_some(asio::buffer(messagePayloadBuffer), asio::use_awaitable);
 
 				if(n != (header->payloadSize + 1)) {
-					spdlog::warn("Malformed payload (read {} bytes)", n);
+					spdlog::warn("Malformed payload (read {} bytes when we were supposed to read {} bytes)", n, header->payloadSize + 1);
 					continue;
 				}
 
-				server->reader.ReadAndHandleMessage(*header, messagePayloadBuffer, server, shared_from_this());
+				// Discard this message if it didn't read successfully
+				if(!server->reader.ReadAndHandleMessage(*header, messagePayloadBuffer, server, shared_from_this()))
+					continue;
+
+				// Add to the user's per-IP ratelimit.
 			}
 
 		} catch(std::exception& ex) {

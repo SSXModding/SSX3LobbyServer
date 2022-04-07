@@ -71,8 +71,9 @@ namespace ls {
 		 *
 		 * \param[in] inBuf buffer to read serialized properties from (to complete this message)
 		 * \param[in] client Client which this message is from.
+		 * \return True on success, false on failure.
 		 */
-		void ReadProperties(const std::vector<std::uint8_t>& inBuf);
+		bool ReadProperties(const std::vector<std::uint8_t>& inBuf);
 
 		/**
 		 * The type code.

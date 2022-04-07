@@ -35,8 +35,6 @@ namespace ls {
 	} // namespace detail
 
 	std::shared_ptr<MessageBase> CreateMessageFromTypeCode(uint32_t TypeCode) {
-		auto* fccbytes = ((uint8_t*)&TypeCode);
-
 		auto& map = detail::MessageFactoryMap();
 		auto it = map.find(TypeCode);
 
@@ -98,65 +96,73 @@ namespace ls {
 		memcpy(&outBuf[sizeof(WireMessageHeader)], total.data(), total.length());
 	}
 
-	void MessageBase::ReadProperties(const std::vector<std::uint8_t>& inBuf) {
+	bool MessageBase::ReadProperties(const std::vector<std::uint8_t>& inBuf) {
+		// Nothing to parse, so return success
 		if(inBuf.empty())
-			return;
+			return true;
+
+		// Current state of the reader state machine (see below.)
 
 		std::string key;
 		std::string val;
 
-		uint32_t inputIndex = 0;
+		size_t inputIndex = 0;
 
-		// state of the reader state machine (see below)
 		enum class ReaderState {
-			InKey,
-			InValue
-		} state{ReaderState::InKey};
+			InKey,	///< The state machine is currently parsing a key.
+			InValue ///< The state machine is currently parsing a value.
+		} state { ReaderState::InKey };
 
 		// Parse all properties, using a relatively simple state machine.
 		//
 		// State transition mappings:
 		// = - from key to value state (if in key state)
-		// \n - from value to key state (if in value state)
-		//
+		// \n - from value to key state (if in value state, otherwise error)
 
 		while(inputIndex != inBuf.size()) {
 			switch(inBuf[inputIndex]) {
-
 				case '=':
 					if(state == ReaderState::InKey) {
 						state = ReaderState::InValue;
 						break;
 					} else {
 						// If we're in the value state, we're allowed to nest = signs, I think.
-						val += inBuf[inputIndex];
+						// if not, then this is PROBABLY an error state.
+						val += static_cast<char>(inBuf[inputIndex]);
 					}
 					break;
 
 				case '\n':
 					if(state == ReaderState::InValue) {
-						printf("state transition - to key\n");
+						//printf("state transition - to key\n");
+
 						properties[key] = val;
-						state = ReaderState::InKey;
+
+						// Reset the state machine, to read another property.
 						key.clear();
 						val.clear();
+						state = ReaderState::InKey;
 						break;
+					} else {
+						// If we get here in the key state, this is DEFINITELY an error.
+						return false;
 					}
-					break;
 
+					// Any other characters are not important to the state machine,
+					// and are instead
 				default:
 					switch(state) {
 						case ReaderState::InKey:
-							key += inBuf[inputIndex];
+							key += static_cast<char>(inBuf[inputIndex]);
 							break;
 						case ReaderState::InValue:
 							// Skip past quotation marks.
 							// I dunno if it's really needed.
 							// (For reference: SSX3 Dirtysock does the same thing, even including ').
-							if(inBuf[inputIndex] == '\"')
+							if(static_cast<char>(inBuf[inputIndex]) == '\"')
 								break;
 
-							val += inBuf[inputIndex];
+							val += static_cast<char>(inBuf[inputIndex]);
 							break;
 					}
 					break;
@@ -164,6 +170,9 @@ namespace ls {
 
 			inputIndex++;
 		}
+
+		// Parse succedded
+		return true;
 	}
 
 	void MessageBase::HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
