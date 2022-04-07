@@ -149,7 +149,8 @@ namespace ls {
 					}
 
 					// Any other characters are not important to the state machine,
-					// and are instead
+					// and are instead written to the given staging string for the current
+					// state machine state.
 				default:
 					switch(state) {
 						case ReaderState::InKey:
