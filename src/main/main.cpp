@@ -7,17 +7,21 @@
 // Text is provided in LICENSE.
 //
 
-#include <MessageBase.h>
-#include <MessageReader.h>
+#ifndef NDEBUG
+	#include <boost/core/demangle.hpp>
+#endif
 
-#include <fourcc.h>
-
-#include <Server.h>
-
-#include <iostream>
-
-#include <config/ConfigStore.h>
 #include <config/backends/CommandLineConfigBackend.h>
+#include <config/ConfigStore.h>
+#include <Server.h>
+#include <spdlog/spdlog.h>
+
+#ifdef TEST
+
+	#include <MessageBase.h>
+	#include <MessageReader.h>
+	#include <fourcc.h>
+#endif
 
 /**
  * The server-wide global instance of the config store.
@@ -30,9 +34,8 @@ int main(int argc, char** argv) {
 
 	clibackend.Process(argc, argv);
 
-
 	// Garbage testcase for (de)serialization
-#if 0 // TODO: move to catch2 tests
+#ifdef TEST // TODO: move to catch2 tests
 	std::vector<std::uint8_t> buf;
 
 	auto msg = ls::CreateMessageFromTypeCode(ls::FourCCValue("test"));
@@ -45,25 +48,37 @@ int main(int argc, char** argv) {
 
 	msg->Serialize(buf);
 
-	//printf("DEBUG: buf len is %lu\n", buf.size());
-	//std::cout.write((const char*)&buf[0], buf.size());
+	// printf("DEBUG: buf len is %lu\n", buf.size());
+	// std::cout.write((const char*)&buf[0], buf.size());
 
 	ls::MessageReader reader;
 	auto h = reader.ReadHeader(&buf[0]);
 	if(!h.has_value()) {
 		std::cout << "fuck\n";
 	} else {
-		reader.ReadAndHandleMessage(*h, {buf.begin() + sizeof(ls::WireMessageHeader), buf.end()}, nullptr, nullptr);
+		reader.ReadAndHandleMessage(*h, { buf.begin() + sizeof(ls::WireMessageHeader), buf.end() }, nullptr, nullptr);
 	}
-
 #endif
 
 	boost::asio::io_context ioc(1);
 
 	auto server = std::make_shared<ls::Server>(ioc);
-	server->Start();
 
-	ioc.run();
+	try {
+		server->Start();
+		ioc.run();
+	} catch(std::exception& ex) {
+#ifndef NDEBUG
+		spdlog::error("Uncaught exception (of type {}): {}", boost::core::demangle(typeid(ex).name()), ex.what());
+#else
+		spdlog::error("Uncaught exception: {}", ex.what());
+#endif
 
+		// shut everything down
+		if(!ioc.stopped())
+			ioc.stop();
+
+		return 1;
+	}
 	return 0;
 }

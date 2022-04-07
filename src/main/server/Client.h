@@ -43,6 +43,11 @@ namespace ls {
 		std::deque<std::shared_ptr<MessageBase>> messageWriteQueue;
 
 		std::shared_ptr<Server> server;
+
+		// user data:
+
+		// per-IP user data.
+		// We use this to
 	};
 
 } // namespace ls

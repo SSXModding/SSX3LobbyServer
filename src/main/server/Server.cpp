@@ -10,7 +10,12 @@
 #include "Server.h"
 #include "Client.h"
 
+#include <config/ConfigStore.h>
+
 #include <spdlog/spdlog.h>
+
+
+extern ls::ConfigStore gConfigStore;
 
 
 namespace ls {
@@ -25,12 +30,30 @@ namespace ls {
 	}
 
 	void Server::Start() {
-		spdlog::info("Server started");
-		asio::co_spawn(ioc, shared_from_this()->ListenerCoro(tcp::acceptor { ioc, tcp::endpoint { tcp::v4(), GAME_PORT }, true }), asio::detached);
+		asio::ip::address address;
+
+		auto listen_address = gConfigStore.GetValue<std::string>("listen_address");
+
+		if(listen_address.has_value()) {
+			address = asio::ip::make_address(listen_address.value());
+		} else {
+			// Ok, then we can just use 0.0.0.0
+			// FIXME: should have a default set in the config store, rather than hardcoding it here.
+			// We can remove this branch after that (and if somehow we do get here assert or something?)
+			address = asio::ip::make_address("0.0.0.0");
+		}
+
+		// Spawn a server on the game port
+		asio::co_spawn(ioc, shared_from_this()->ListenerCoro(tcp::acceptor { ioc, tcp::endpoint { address, GAME_PORT }, true }), asio::detached);
+		// TODO: Buddy port, maybe a UDP thingy if required
 	}
 
 	asio::awaitable<void> Server::ListenerCoro(tcp::acceptor acceptor) {
 		// TODO: catch exceptions (so we can keep going gracefully)
+
+		auto listen_ep = acceptor.local_endpoint();
+		spdlog::info("Listening on {}:{}", listen_ep.address().to_string(), listen_ep.port());
+
 		for(;;) {
 			std::make_shared<Client>(co_await acceptor.async_accept(asio::use_awaitable), shared_from_this())->Open();
 		}
