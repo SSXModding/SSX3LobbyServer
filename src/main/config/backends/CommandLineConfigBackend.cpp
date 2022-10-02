@@ -7,7 +7,7 @@
 // Text is provided in LICENSE.
 //
 
-#include "CommandLineConfigBackend.h"
+#include "CommandLineConfigBackend.hpp"
 
 #include <boost/asio/version.hpp>
 #include <boost/program_options.hpp>

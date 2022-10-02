@@ -7,8 +7,8 @@
 // Text is provided in LICENSE.
 //
 
-#ifndef SSX3LOBBYSERVER_RATELIMIT_H
-#define SSX3LOBBYSERVER_RATELIMIT_H
+#ifndef SSX3LOBBYSERVER_RATELIMIT_HPP
+#define SSX3LOBBYSERVER_RATELIMIT_HPP
 
 #include <cstdint>
 #include <chrono>

@@ -7,11 +7,10 @@
 // Text is provided in LICENSE.
 //
 
-#ifndef SSX3LOBBYSERVER_MESSAGEBASE_H
-#define SSX3LOBBYSERVER_MESSAGEBASE_H
+#ifndef SSX3LOBBYSERVER_MESSAGEBASE_HPP
+#define SSX3LOBBYSERVER_MESSAGEBASE_HPP
 
-#include <fourcc.h>
-
+#include <FourCC.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -125,4 +124,4 @@ namespace ls {
 
 } // namespace ls
 
-#endif // SSX3LOBBYSERVER_MESSAGEBASE_H
+#endif // SSX3LOBBYSERVER_MESSAGEBASE_HPP

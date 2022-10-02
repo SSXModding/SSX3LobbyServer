@@ -7,14 +7,15 @@
 // Text is provided in LICENSE.
 //
 
-#include "MessageBase.h"
+#include "MessageBase.hpp"
 
-#include <byteswap.h>
 #include <fmt/core.h>
-#include <singleton.h>
 #include <spdlog/spdlog.h>
 
-#include "WireMessageHeader.h"
+#include <ByteSwap.hpp>
+#include <CofuSingleton.hpp>
+
+#include "WireMessageHeader.hpp"
 
 namespace ls {
 

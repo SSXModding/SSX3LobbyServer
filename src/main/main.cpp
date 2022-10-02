@@ -7,15 +7,11 @@
 // Text is provided in LICENSE.
 //
 
-// Includes for debug code.
-#ifndef NDEBUG
-	#include <boost/core/demangle.hpp>
-#endif
-
-#include <config/backends/CommandLineConfigBackend.h>
-#include <config/ConfigStore.h>
-#include <Server.h>
 #include <spdlog/spdlog.h>
+
+#include <config/backends/CommandLineConfigBackend.hpp>
+#include <config/ConfigStore.hpp>
+#include <Server.hpp>
 
 // Includes for test code
 #ifdef TEST
@@ -29,6 +25,7 @@
  */
 ls::ConfigStore gConfigStore;
 
+// Start trying to make catch2 testcases please :(
 #ifdef TEST
 bool SerializeTest() {
 	std::vector<std::uint8_t> buf;
@@ -76,25 +73,10 @@ int main(int argc, char** argv) {
 	return (SerializeTest() == true);
 #endif
 
-	boost::asio::io_context ioc(1);
+	boost::asio::io_context ioc;
 
-	auto server = std::make_shared<ls::Server>(ioc);
 
-	try {
-		server->Start();
-		ioc.run();
-	} catch(std::exception& ex) {
-#ifndef NDEBUG
-		spdlog::error("Uncaught exception (of type {}): {}", boost::core::demangle(typeid(ex).name()), ex.what());
-#else
-		spdlog::error("Uncaught exception: {}", ex.what());
-#endif
-
-		// shut everything down
-		if(!ioc.stopped())
-			ioc.stop();
-
-		return 1;
-	}
+	std::make_shared<ls::Server>(ioc)->Start();
+	ioc.run();
 	return 0;
 }

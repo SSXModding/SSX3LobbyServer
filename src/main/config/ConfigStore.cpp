@@ -7,8 +7,7 @@
 // Text is provided in LICENSE.
 //
 
-#include "ConfigStore.h"
-
+#include "ConfigStore.hpp"
 
 namespace ls {
 

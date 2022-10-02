@@ -7,12 +7,14 @@
 // Text is provided in LICENSE.
 //
 
-#ifndef SSX3LOBBYSERVER_FOURCC_H
-#define SSX3LOBBYSERVER_FOURCC_H
+#ifndef SSX3LOBBYSERVER_FOURCC_HPP
+#define SSX3LOBBYSERVER_FOURCC_HPP
 
 #include <cstdint>
 
 namespace ls {
+
+	// Replace this with the objectively better europatools fourcc routine
 
 	/**
 	 * Make a FourCC value at compile time, with a given input string.
@@ -26,4 +28,4 @@ namespace ls {
 
 }
 
-#endif // SSX3LOBBYSERVER_FOURCC_H
+#endif // SSX3LOBBYSERVER_FOURCC_HPP

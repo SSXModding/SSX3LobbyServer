@@ -7,14 +7,12 @@
 // Text is provided in LICENSE.
 //
 
-#ifndef SSX3LOBBYSERVER_COMMANDLINECONFIGBACKEND_H
-#define SSX3LOBBYSERVER_COMMANDLINECONFIGBACKEND_H
+#ifndef SSX3LOBBYSERVER_COMMANDLINECONFIGBACKEND_HPP
+#define SSX3LOBBYSERVER_COMMANDLINECONFIGBACKEND_HPP
 
+#include <config/ConfigStore.hpp>
 #include <cstdint>
 #include <string>
-
-#include <config/ConfigStore.h>
-
 
 namespace ls {
 	/**
@@ -30,4 +28,4 @@ namespace ls {
 	};
 } // namespace ls
 
-#endif // SSX3LOBBYSERVER_COMMANDLINECONFIGBACKEND_H
+#endif // SSX3LOBBYSERVER_COMMANDLINECONFIGBACKEND_HPP

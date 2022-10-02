@@ -5,7 +5,7 @@ add_executable(ssx3lobbyserver
 		config/backends/CommandLineConfigBackend.cpp
 
 		# Server code
-		server/AsioImpl.cpp
+		server/asio/AsioImpl.cpp
 		server/MessageBase.cpp
 		server/MessageReader.cpp
 		server/Server.cpp
@@ -40,6 +40,9 @@ target_include_directories(ssx3lobbyserver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(ssx3lobbyserver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/server)
 
 target_compile_definitions(ssx3lobbyserver PUBLIC
+		# Comment if this causes a problem on your system
+		-DLS_USE_SYSTEM_EXECUTOR
+
 		-DSPDLOG_FMT_EXTERNAL=1
 
 		# No more io_service! No more io_context::work!
@@ -50,4 +53,7 @@ target_compile_definitions(ssx3lobbyserver PUBLIC
 		-DBOOST_ASIO_DISABLE_BOOST_DATE_TIME=1
 		-DBOOST_ASIO_DISABLE_BOOST_REGEX=1
 		-DBOOST_ASIO_SEPARATE_COMPILATION=1
+
+		# Enable io_uring support on Linux
+		-DBOOST_ASIO_DISABLE_EPOLL=1
 		)

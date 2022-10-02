@@ -7,8 +7,8 @@
 // Text is provided in LICENSE.
 //
 
-#ifndef SSX3LOBBYSERVER_CONFIGSTORE_H
-#define SSX3LOBBYSERVER_CONFIGSTORE_H
+#ifndef SSX3LOBBYSERVER_CONFIGSTORE_HPP
+#define SSX3LOBBYSERVER_CONFIGSTORE_HPP
 
 #include <optional>
 #include <string>
@@ -83,4 +83,4 @@ namespace ls {
 
 } // namespace ls
 
-#endif // SSX3LOBBYSERVER_CONFIGSTORE_H
+#endif // SSX3LOBBYSERVER_CONFIGSTORE_HPP

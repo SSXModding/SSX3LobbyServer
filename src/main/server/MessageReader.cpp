@@ -7,10 +7,9 @@
 // Text is provided in LICENSE.
 //
 
-#include "MessageReader.h"
+#include "MessageReader.hpp"
 
-#include <byteswap.h>
-
+#include <ByteSwap.hpp>
 #include <cstring>
 
 namespace ls {
@@ -20,7 +19,7 @@ namespace ls {
 	// also taken from bustin in
 	constexpr static auto MAX_PAYLOAD_SIZE = (1024 * 1024) * 2;
 
-	std::optional<WireMessageHeader> MessageReader::ReadHeader(const std::uint8_t* buf) {
+	std::optional<WireMessageHeader> MessageReader::ReadHeader(const std::uint8_t* buf) noexcept {
 		WireMessageHeader ret;
 
 		if(buf == nullptr)
@@ -41,7 +40,7 @@ namespace ls {
 		return ret;
 	}
 
-	bool MessageReader::ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
+	bool MessageReader::ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) noexcept {
 		// Create the message instance from the message factory
 		auto message = ls::CreateMessageFromTypeCode(header.typeCode);
 #if 0

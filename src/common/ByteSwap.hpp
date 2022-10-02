@@ -7,8 +7,8 @@
 // Text is provided in LICENSE.
 //
 
-#ifndef SSX3LOBBYSERVER_BYTESWAP_H
-#define SSX3LOBBYSERVER_BYTESWAP_H
+#ifndef SSX3LOBBYSERVER_BYTESWAP_HPP
+#define SSX3LOBBYSERVER_BYTESWAP_HPP
 
 // TODO: implement msvc & generic C intrins
 #ifdef __GNUC__
@@ -28,4 +28,4 @@
 	#error lazy please wait for me to implement youre are compiler support
 #endif
 
-#endif // SSX3LOBBYSERVER_BYTESWAP_H
+#endif // SSX3LOBBYSERVER_BYTESWAP_HPP

@@ -7,8 +7,8 @@
 // Text is provided in LICENSE.
 //
 
-#ifndef SSX3LOBBYSERVER_SINGLETON_H
-#define SSX3LOBBYSERVER_SINGLETON_H
+#ifndef SSX3LOBBYSERVER_COFUSINGLETON_HPP
+#define SSX3LOBBYSERVER_COFUSINGLETON_HPP
 
 namespace ls {
 
@@ -35,4 +35,4 @@ namespace ls {
 	T CofuSingleton<T>::t;
 }
 
-#endif // SSX3LOBBYSERVER_SINGLETON_H
+#endif // SSX3LOBBYSERVER_COFUSINGLETON_HPP

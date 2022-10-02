@@ -13,7 +13,7 @@
 
 namespace ls {
 
-	Client::Client(tcp::socket socket, std::shared_ptr<Server> server)
+	Client::Client(SocketType<tcp> socket, std::shared_ptr<Server> server) noexcept
 		: messageWriteTimer(socket.get_executor()),
 		  server(server),
 		  socket(std::move(socket)) {
@@ -23,31 +23,29 @@ namespace ls {
 	void Client::Open() {
 		spdlog::info("Connection opened from {}", socket.remote_endpoint().address().to_string());
 
-		asio::co_spawn(
-		socket.get_executor(), [self = shared_from_this()] {
-			return self->ReaderCoro(); // co_return?
-		},
-		asio::detached);
+		net::co_spawn(socket.get_executor(), [self = shared_from_this()] noexcept {
+			return self->ReaderCoro();
+		}, net::detached);
 
-		asio::co_spawn(
-		socket.get_executor(), [self = shared_from_this()] {
+		net::co_spawn(socket.get_executor(), [self = shared_from_this()] noexcept {
 			return self->WriterCoro(); // co_return?
-		},
-		asio::detached);
+		}, net::detached);
 	}
 
-	void Client::AddMessage(std::shared_ptr<MessageBase> message) {
+	void Client::AddMessage(std::shared_ptr<MessageBase> message) noexcept {
 		messageWriteQueue.push_back(message);
 		messageWriteTimer.cancel_one();
 	}
 
-	asio::awaitable<void> Client::ReaderCoro() {
-		try {
+	Awaitable<void> Client::ReaderCoro() noexcept {
 			char messageHeaderBuffer[sizeof(WireMessageHeader)];
 			std::vector<std::uint8_t> messagePayloadBuffer;
 
 			while(true) {
-				auto n = co_await socket.async_read_some(asio::buffer(messageHeaderBuffer), asio::use_awaitable);
+				auto [ec, n] = co_await socket.async_read_some(net::buffer(messageHeaderBuffer), use_tuple_awaitable);
+
+				if(ec)
+					break;
 
 				if(n == 0)
 					continue;
@@ -55,7 +53,7 @@ namespace ls {
 				// give up parsing this message
 				if(n != sizeof(WireMessageHeader)) {
 					spdlog::warn("Malformed message (read {} bytes, when header is {} bytes)", n, sizeof(WireMessageHeader));
-					continue;
+					break;
 				}
 
 				auto header = server->reader.ReadHeader((const uint8_t*)&messageHeaderBuffer[0]);
@@ -69,11 +67,11 @@ namespace ls {
 
 				messagePayloadBuffer.resize(header->payloadSize + 1);
 
-				n = co_await socket.async_read_some(asio::buffer(messagePayloadBuffer), asio::use_awaitable);
+				auto [ payloadEc, payloadN ] = co_await socket.async_read_some(net::buffer(messagePayloadBuffer), use_tuple_awaitable);
 
-				if(n != (header->payloadSize + 1)) {
-					spdlog::warn("Malformed payload (read {} bytes when we were supposed to read {} bytes)", n, header->payloadSize + 1);
-					continue;
+				if(payloadN != (header->payloadSize + 1)) {
+					spdlog::warn("Malformed payload (read {} bytes when we were supposed to read {} bytes)", payloadN, header->payloadSize + 1);
+					break;
 				}
 
 				// Discard this message if it didn't read successfully
@@ -83,34 +81,32 @@ namespace ls {
 				// Add to the user's per-IP ratelimit.
 			}
 
-		} catch(std::exception& ex) {
 			Close();
-		}
 	}
 
-	asio::awaitable<void> Client::WriterCoro() {
-		try {
-			while(socket.is_open()) {
-				if(messageWriteQueue.empty()) {
-					boost::system::error_code ec;
-					co_await messageWriteTimer.async_wait(asio::redirect_error(asio::use_awaitable, ec));
-				} else {
-					std::vector<std::uint8_t> serializationBuf;
-					auto message = messageWriteQueue.front();
+	Awaitable<void> Client::WriterCoro() noexcept {
+		while(socket.is_open()) {
+			if(messageWriteQueue.empty()) {
+				auto [ec] = co_await messageWriteTimer.async_wait(use_tuple_awaitable);
+			} else {
+				std::vector<std::uint8_t> serializationBuf;
+				auto message = messageWriteQueue.front();
 
-					message->Serialize(serializationBuf);
+				message->Serialize(serializationBuf);
 
-					co_await socket.async_write_some(asio::buffer(serializationBuf), asio::use_awaitable);
+				auto [ec, written] = co_await socket.async_write_some(net::buffer(serializationBuf), use_tuple_awaitable);
 
-					messageWriteQueue.pop_front();
-				}
+				if(ec)
+					break;
+
+				messageWriteQueue.pop_front();
 			}
-		} catch(std::exception& ex) {
-			Close();
 		}
+
+		Close();
 	}
 
-	void Client::Close() {
+	void Client::Close() noexcept {
 		spdlog::info("Connection closed");
 		socket.close();
 		messageWriteQueue.clear(); // TODO: This statement should probably be part of the destructor

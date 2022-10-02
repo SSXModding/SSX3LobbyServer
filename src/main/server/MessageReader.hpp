@@ -7,12 +7,12 @@
 // Text is provided in LICENSE.
 //
 
-#ifndef SSX3LOBBYSERVER_MESSAGEREADER_H
-#define SSX3LOBBYSERVER_MESSAGEREADER_H
+#ifndef SSX3LOBBYSERVER_MESSAGEREADER_HPP
+#define SSX3LOBBYSERVER_MESSAGEREADER_HPP
 
-#include <MessageBase.h>
-#include <WireMessageHeader.h>
+#include <MessageBase.hpp>
 #include <optional>
+#include <WireMessageHeader.hpp>
 
 namespace ls {
 
@@ -26,7 +26,7 @@ namespace ls {
 		 * \param[in] buf Header buffer.
 		 * \return A header on success, nullopt otherwise.
 		 */
-		std::optional<WireMessageHeader> ReadHeader(const std::uint8_t* buf);
+		std::optional<WireMessageHeader> ReadHeader(const std::uint8_t* buf) noexcept;
 
 		/**
 		 * Read the rest of and then handle (dispatching to the HandleClientMessage() function) a received message.
@@ -35,10 +35,10 @@ namespace ls {
 		 * \param[in] buf Property buffer.
 		 * \returns True if message parsed and handled successfully; false otherwise.
 		 */
-		bool ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client);
+		bool ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) noexcept;
 
 	};
 
 }
 
-#endif // SSX3LOBBYSERVER_MESSAGEREADER_H
+#endif // SSX3LOBBYSERVER_MESSAGEREADER_HPP

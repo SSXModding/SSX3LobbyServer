@@ -7,10 +7,11 @@
 // Text is provided in LICENSE.
 //
 
-#include "Server.h"
+#include "Server.hpp"
 
-#include <config/ConfigStore.h>
 #include <spdlog/spdlog.h>
+
+#include <config/ConfigStore.hpp>
 
 #include "Client.h"
 
@@ -23,37 +24,39 @@ namespace ls {
 	// Game connects to ps2ssx04.ea.com:11000
 	constexpr auto GAME_PORT = 11000;
 
-	Server::Server(asio::io_context& ioc)
+	Server::Server(net::io_context& ioc) noexcept
 		: ioc(ioc) {
 	}
 
-	void Server::Start() {
-		asio::ip::address address;
+	void Server::Start() noexcept {
+		net::ip::address address;
 
 		auto listen_address = gConfigStore.GetValue<std::string>("listen_address");
 
 		if(listen_address.has_value()) {
-			address = asio::ip::make_address(listen_address.value());
+			address = net::ip::make_address(listen_address.value());
 		} else {
 			// Ok, then we can just use 0.0.0.0
 			// FIXME: should have a default set in the config store, rather than hardcoding it here.
 			// We can remove this branch after that (and if somehow we do get here assert or something?)
-			address = asio::ip::make_address("0.0.0.0");
+			address = net::ip::make_address("0.0.0.0");
 		}
 
 		// Spawn a server on the game port
-		asio::co_spawn(ioc, shared_from_this()->ListenerCoro(tcp::acceptor { ioc, tcp::endpoint { address, GAME_PORT }, true }), asio::detached);
+		net::co_spawn(MakeExecutor(), shared_from_this()->ListenerCoro(AcceptorType<tcp> { MakeExecutor(), tcp::endpoint { address, GAME_PORT }, true }), net::detached);
 		// TODO: Buddy port, maybe a UDP thingy if required
 	}
 
-	asio::awaitable<void> Server::ListenerCoro(tcp::acceptor acceptor) {
-		// TODO: catch exceptions (so we can keep going gracefully)
-
+	Awaitable<void> Server::ListenerCoro(AcceptorType<tcp> acceptor) noexcept {
 		auto listen_ep = acceptor.local_endpoint();
 		spdlog::info("Listening on {}:{}", listen_ep.address().to_string(), listen_ep.port());
 
 		for(;;) {
-			std::make_shared<Client>(co_await acceptor.async_accept(asio::use_awaitable), shared_from_this())->Open();
+			auto [ec, socket] = co_await acceptor.async_accept(use_tuple_awaitable);
+
+			// should probably draw from context pool but for now this is fine
+			if(!ec)
+				std::make_shared<Client>(std::move(socket), shared_from_this())->Open();
 		}
 	}
 
