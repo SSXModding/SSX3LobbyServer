@@ -20,14 +20,14 @@ namespace ls {
 		messageWriteTimer.expires_after(std::chrono::nanoseconds(500));
 	}
 
-	void Client::Open() {
+	void Client::Open() noexcept {
 		spdlog::info("Connection opened from {}", socket.remote_endpoint().address().to_string());
 
-		net::co_spawn(socket.get_executor(), [self = shared_from_this()] noexcept {
+		net::co_spawn(socket.get_executor(), [self = shared_from_this()] {
 			return self->ReaderCoro();
 		}, net::detached);
 
-		net::co_spawn(socket.get_executor(), [self = shared_from_this()] noexcept {
+		net::co_spawn(socket.get_executor(), [self = shared_from_this()] {
 			return self->WriterCoro(); // co_return?
 		}, net::detached);
 	}

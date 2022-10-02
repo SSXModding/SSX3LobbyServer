@@ -15,6 +15,7 @@
 #include <ByteSwap.hpp>
 #include <CofuSingleton.hpp>
 
+#include "asio/AsioConfig.hpp"
 #include "WireMessageHeader.hpp"
 
 namespace ls {
@@ -50,7 +51,7 @@ namespace ls {
 				this->typeCode = TypeCode;
 			}
 
-			void HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) override {
+			Awaitable<void> HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) override {
 				auto* fccbytes = ((uint8_t*)&typeCode);
 
 				spdlog::info("Debug Message FourCC lo: \"{:c}{:c}{:c}{:c}\"", fccbytes[0], fccbytes[1], fccbytes[2], fccbytes[3]);
