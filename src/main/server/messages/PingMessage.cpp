@@ -24,7 +24,8 @@ struct PingMessage : public ls::MessageBase {
 		properties["TIME"] = "";
 	}
 
-	void HandleClientMessage(std::shared_ptr<ls::Server> server, std::shared_ptr<ls::Client> client) override {
+	ls::Awaitable<void> HandleClientMessage(std::shared_ptr<ls::Server> server, std::shared_ptr<ls::Client> client) override {
+
 	}
 };
 

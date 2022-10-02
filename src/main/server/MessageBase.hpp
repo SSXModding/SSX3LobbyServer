@@ -16,15 +16,13 @@
 #include <unordered_map>
 #include <vector>
 
+#include <asio/AsioConfig.hpp>
+
 // Some notes:
 // - The current factory/""reflection"" system heap-allocates EVERY parsed message.
 //		Should an adapter Allocator like the PMR Allocators that allocates via a memory pool be used or something?
 //		(don't really need performance, but we don't want spam parsed messages to DoS the service or require more resources than needed.)
 //		(could also fix above with a ratelimit. which I may do tbh)
-//
-// 		We could maybe also do locked singleton access to a message, which would reduce allocations considerably but maybe
-//		make program logic a bit more difficult (as well as serializing access, making the general outbound performance possibly about the same
-//		as if the server were single-threaded, if not worse. BUT, less allocs (most of the time. We'd need to clear so it might actually INCREASE allocs/free a bit)!)
 //
 
 namespace ls {
@@ -63,7 +61,7 @@ namespace ls {
 		 * Base version does nothing.
 		 * Override to do message specific handling.
 		 */
-		virtual void HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client);
+		virtual Awaitable<void> HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client);
 
 		/**
 		 * Read the serialized properties from a buffer.

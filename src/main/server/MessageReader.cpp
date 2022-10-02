@@ -45,7 +45,7 @@ namespace ls {
 		auto message = ls::CreateMessageFromTypeCode(header.typeCode);
 #if 0
 		if(!message)
-			return;
+			return false;
 #endif
 
 		// Just handle the message if there's no property data.

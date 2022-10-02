@@ -19,6 +19,7 @@
 
 namespace ls {
 
+	// TODO: move message factory to separate implementation file
 	namespace detail {
 
 		static ls::CofuSingleton<std::unordered_map<uint32_t, ls::detail::MessageFactory>> MessageFactoryMap;
@@ -36,7 +37,7 @@ namespace ls {
 	} // namespace detail
 
 	std::shared_ptr<MessageBase> CreateMessageFromTypeCode(uint32_t TypeCode) {
-		auto& map = detail::MessageFactoryMap();
+		const auto& map = detail::MessageFactoryMap();
 		auto it = map.find(TypeCode);
 
 		/**
@@ -52,8 +53,8 @@ namespace ls {
 			void HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) override {
 				auto* fccbytes = ((uint8_t*)&typeCode);
 
-				spdlog::info("fourcc lo: \"{:c}{:c}{:c}{:c}\"", fccbytes[0], fccbytes[1], fccbytes[2], fccbytes[3]);
-				spdlog::info("properties:");
+				spdlog::info("Debug Message FourCC lo: \"{:c}{:c}{:c}{:c}\"", fccbytes[0], fccbytes[1], fccbytes[2], fccbytes[3]);
+				spdlog::info("Debug Message Properties:");
 
 				for(auto [key, value] : properties)
 					spdlog::info("{}: {}", key, value);
@@ -177,7 +178,7 @@ namespace ls {
 		return true;
 	}
 
-	void MessageBase::HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
+	Awaitable<void> MessageBase::HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
 	}
 
 	void MessageBase::CreateDefaultProperties() {

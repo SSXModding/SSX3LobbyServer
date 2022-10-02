@@ -23,6 +23,10 @@ namespace ls {
 
 		void Close() noexcept;
 
+		// maybe rethink design of sending messages and have a
+		// AsyncSend(shared_ptr<MessageBase>, CompletionToken)
+		// which queues up and then calls token when our message is written
+
 		/**
 		 * Add a message to the writer queue.
 		 */

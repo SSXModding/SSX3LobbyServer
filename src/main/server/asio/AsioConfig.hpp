@@ -7,6 +7,10 @@
 // Text is provided in LICENSE.
 //
 
+// This file provides typedefs for Asio which change
+// depending on if we're using the system executor or not
+// (and also some niceties that don't change.)
+
 #ifndef SSX3LOBBYSERVER_ASIOCONFIG_HPP
 #define SSX3LOBBYSERVER_ASIOCONFIG_HPP
 
