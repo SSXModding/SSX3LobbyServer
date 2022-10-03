@@ -13,7 +13,7 @@
 
 #include <config/ConfigStore.hpp>
 
-#include "Client.h"
+#include "Client.hpp"
 
 extern ls::ConfigStore gConfigStore;
 
@@ -55,7 +55,6 @@ namespace ls {
 
 		for(;;) {
 			auto [ec, socket] = co_await acceptor.async_accept(use_tuple_awaitable);
-
 
 			if(ec == net::error::operation_aborted)
 				break;

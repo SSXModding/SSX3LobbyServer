@@ -7,7 +7,7 @@
 // Text is provided in LICENSE.
 //
 
-#include "Client.h"
+#include "Client.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -28,7 +28,7 @@ namespace ls {
 		}, net::detached);
 
 		net::co_spawn(socket.get_executor(), [self = shared_from_this()] {
-			return self->WriterCoro(); // co_return?
+			return self->WriterCoro();
 		}, net::detached);
 	}
 

@@ -17,7 +17,7 @@ namespace ls {
 	/**
 	 * The on-wire message header.
 	 */
-	struct WireMessageHeader {
+	struct [[gnu::packed]] WireMessageHeader {
 		/**
 		 * Message type code.
 		 */

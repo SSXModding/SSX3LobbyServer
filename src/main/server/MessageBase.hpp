@@ -19,10 +19,21 @@
 #include <asio/AsioConfig.hpp>
 
 // Some notes:
+//
 // - The current factory/""reflection"" system heap-allocates EVERY parsed message.
 //		Should an adapter Allocator like the PMR Allocators that allocates via a memory pool be used or something?
 //		(don't really need performance, but we don't want spam parsed messages to DoS the service or require more resources than needed.)
 //		(could also fix above with a ratelimit. which I may do tbh)
+//
+// - Refactor the factory to put messages in specific groups. The reader can then have a
+//		MessageReader& AddGroup(ls::MessageGroup&) noexcept; (which can be chained)
+//
+//		then can do:
+//			reader.AddGroup(ls::SystemMessages())
+//				  .AddGroup(ls::BuddyMessages());
+//
+//		this would allow for buddy port and everything to not allow normal messages,
+//		which is PROBABLY a good idea.
 //
 
 namespace ls {

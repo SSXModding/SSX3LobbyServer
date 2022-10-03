@@ -7,8 +7,8 @@
 // Text is provided in LICENSE.
 //
 
-#ifndef SSX3LOBBYSERVER_CLIENT_H
-#define SSX3LOBBYSERVER_CLIENT_H
+#ifndef SSX3LOBBYSERVER_CLIENT_HPP
+#define SSX3LOBBYSERVER_CLIENT_HPP
 
 #include <boost/asio/steady_timer.hpp>
 #include <deque>
@@ -55,4 +55,4 @@ namespace ls {
 
 } // namespace ls
 
-#endif // SSX3LOBBYSERVER_CLIENT_H
+#endif // SSX3LOBBYSERVER_CLIENT_HPP
