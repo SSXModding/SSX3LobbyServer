@@ -9,6 +9,8 @@
 
 #include "MessageReader.hpp"
 
+#include "Client.hpp"
+
 #include <ByteSwap.hpp>
 #include <cstring>
 

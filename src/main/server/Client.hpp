@@ -10,7 +10,7 @@
 #ifndef SSX3LOBBYSERVER_CLIENT_HPP
 #define SSX3LOBBYSERVER_CLIENT_HPP
 
-#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/compose.hpp>
 #include <deque>
 #include <Server.hpp>
 
@@ -23,27 +23,52 @@ namespace ls {
 
 		void Close() noexcept;
 
-		// maybe rethink design of sending messages and have a
-		// AsyncSend(shared_ptr<MessageBase>, CompletionToken)
-		// which queues up and then calls token when our message is written
+		template<typename Protocol>
+		struct AsyncSendImpl {
+			enum class State {
+				Started, ///< Write has begun.
+				Written	 ///< Write has ended, either successfully or not.
+			};
 
-		/**
-		 * Add a message to the writer queue.
-		 */
-		void AddMessage(std::shared_ptr<MessageBase> message) noexcept;
+			SocketType<Protocol>& socket;
+			std::unique_ptr<std::vector<std::uint8_t>> serializedMessage;
+			State state { State::Started };
 
+			void operator()(auto& self, const error_code& error = {}, std::size_t bytesSent = 0) {
+				switch(state) {
+					case State::Started:
+						state = State::Written;
+						socket.async_write_some(net::buffer(*serializedMessage), std::move(self));
+						break;
+					case State::Written:
+						serializedMessage.reset();
+						self.complete(error);
+						break;
+				}
+			}
+		};
+
+		template<typename Protocol>
+		AsyncSendImpl(SocketType<Protocol>, std::unique_ptr<std::vector<std::uint8_t>>&&) -> AsyncSendImpl<Protocol>;
+
+		template <net::completion_token_for<void(error_code)> CompletionToken>
+		auto AsyncSend(std::shared_ptr<MessageBase> message, CompletionToken&& token) noexcept {
+			using CompletionSig = void(error_code);
+
+			// Serialize the message into a buffer used during this operation,
+			// which will be deleted once the operation either completes or fails.
+			std::unique_ptr<std::vector<std::uint8_t>> serialized = std::make_unique<std::vector<std::uint8_t>>();
+			message->Serialize(*serialized);
+
+			return net::async_compose<CompletionToken, CompletionSig>(AsyncSendImpl { socket, std::move(serialized) }, token, socket);
+		}
 
 		uint32_t GetPing() const noexcept;
 		void SetPing(uint32_t pingMs) noexcept;
 
 	   private:
 		Awaitable<void> ReaderCoro() noexcept;
-		Awaitable<void> WriterCoro() noexcept;
-
 		SocketType<tcp> socket;
-
-		TimerType messageWriteTimer;
-		std::deque<std::shared_ptr<MessageBase>> messageWriteQueue;
 
 		std::shared_ptr<Server> server;
 

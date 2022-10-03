@@ -31,27 +31,30 @@ namespace ls {
 	using tcp = net::ip::tcp;
 	using unix_stream = net::local::stream_protocol;
 
+	using error_code = boost::system::error_code;
+
 	/**
 	 * The type for executors to follow.
 	 * This is the basic executor type.
 	 */
 	using BaseExecutorType =
 #ifdef LS_USE_SYSTEM_EXECUTOR
-		net::strand<net::system_executor>;
+		net::system_executor;
 #else
-		net::strand<net::io_context::executor_type>;
+		net::io_context::executor_type;
 #endif
 
 	/**
 	 * The (real) type executors follow.
 	 */
-	using ExecutorType = BaseExecutorType; // ideally should use some default, but can't nest as_tuple_t doing it this way.
+	using ExecutorType = net::strand<BaseExecutorType>; // ideally should use some default, but can't nest as_tuple_t doing it this way.
 
 	/**
 	 * CompletionToken for allowing usage of coroutines w/o exception handling.
 	 * \see Boost.Asio CompletionToken
 	 */
 	constexpr inline auto use_tuple_awaitable = net::as_tuple(net::use_awaitable_t<ExecutorType>{});
+
 
 	/**
 	 * Awaitable type (configured for the current executor)
