@@ -35,6 +35,8 @@
 //		this would allow for buddy port and everything to not allow normal messages,
 //		which is PROBABLY a good idea.
 //
+// - Get rid of MessageReader, Client can handle things itself (and saves 1 byte+padding)?
+//
 
 namespace ls {
 

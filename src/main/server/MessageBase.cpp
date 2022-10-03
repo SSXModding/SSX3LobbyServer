@@ -175,13 +175,12 @@ namespace ls {
 			inputIndex++;
 		}
 
-		// Parse succedded
+		// Parse succeeded
 		return true;
 	}
 
 	Awaitable<void> MessageBase::HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
-		// "co_return;" would be more correct, but base method
-		// shouldn't have to create a coroutine frame. So this is OK for now.
+		co_return;
 	}
 
 	void MessageBase::CreateDefaultProperties() {

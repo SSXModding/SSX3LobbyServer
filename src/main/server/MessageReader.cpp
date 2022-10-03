@@ -16,11 +16,6 @@
 
 namespace ls {
 
-
-	// 2mb max payload size.
-	// also taken from bustin in
-	constexpr static auto MAX_PAYLOAD_SIZE = (1024 * 1024) * 2;
-
 	std::optional<WireMessageHeader> MessageReader::ReadHeader(const std::uint8_t* buf) noexcept {
 		WireMessageHeader ret;
 
@@ -32,12 +27,6 @@ namespace ls {
 
 		// fix the endian on payload size
 		ret.payloadSize = LSNetworkToHost32(ret.payloadSize);
-
-		if(ret.payloadSize > MAX_PAYLOAD_SIZE) {
-			// TODO: Probably close the client connection, or throw an exception
-			// 	to force the client to close.
-			return std::nullopt;
-		}
 
 		return ret;
 	}

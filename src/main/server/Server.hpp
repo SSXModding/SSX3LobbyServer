@@ -14,15 +14,8 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/read.hpp>
-#include <boost/asio/redirect_error.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/write.hpp>
-#include <MessageReader.hpp>
 
-#include "asio/AsioConfig.hpp"
+#include <asio/AsioConfig.hpp>
 #include "RateLimit.hpp"
 
 namespace ls {
@@ -61,8 +54,6 @@ namespace ls {
 
 		// TODO: hold the DB here
 
-
-		MessageReader reader;
 
 		ExecutorType MakeExecutor() noexcept {
 			return net::make_strand(

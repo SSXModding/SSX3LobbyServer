@@ -13,6 +13,10 @@
 
 namespace ls {
 
+	// 1MB max payload size; should be good enough?
+	constexpr static auto MAX_PAYLOAD_SIZE = (1024 * 1024);
+
+
 	Client::Client(SocketType<tcp> socket, std::shared_ptr<Server> server) noexcept
 		: server(server),
 		  socket(std::move(socket)) {
@@ -31,26 +35,37 @@ namespace ls {
 			char messageHeaderBuffer[sizeof(WireMessageHeader)];
 			std::vector<std::uint8_t> messagePayloadBuffer;
 
+			// Reserve a decent amount of bytes upfront so that
+			// (most) message reads won't cause a memory (re)allocation.
+			//
+			// Bigger messages probably will; however the loop does not destroy the vector,
+			// so the memory can still be reused.
+			messagePayloadBuffer.reserve(256);
+
 			while(true) {
 				auto [ec, n] = co_await socket.async_read_some(net::buffer(messageHeaderBuffer), use_tuple_awaitable);
-
-				if(ec)
-					break;
 
 				if(n == 0)
 					continue;
 
-				// give up parsing this message
+				if(ec)
+					break;
+
 				if(n != sizeof(WireMessageHeader)) {
 					spdlog::warn("Malformed message (read {} bytes, when header is {} bytes)", n, sizeof(WireMessageHeader));
 					break;
 				}
 
-				auto header = server->reader.ReadHeader((const uint8_t*)&messageHeaderBuffer[0]);
+				auto header = reader.ReadHeader((const uint8_t*)&messageHeaderBuffer[0]);
 
 				// Discard if the message header could not be read.
 				if(!header.has_value())
 					continue;
+
+				if(header->payloadSize > MAX_PAYLOAD_SIZE) {
+					spdlog::warn("Malformed message went beyond maximum payload size ({}); closing connection", MAX_PAYLOAD_SIZE);
+					break;
+				}
 
 				// TODO: I dunno if the property buf is actually null terminated,
 				// if it isn't we can probably remove this
@@ -65,7 +80,7 @@ namespace ls {
 				}
 
 				// Discard this message if it didn't read successfully
-				if(!co_await server->reader.ReadAndHandleMessage(*header, messagePayloadBuffer, server, shared_from_this()))
+				if(!co_await reader.ReadAndHandleMessage(*header, messagePayloadBuffer, server, shared_from_this()))
 					continue;
 
 				// Add to the user's per-IP ratelimit.

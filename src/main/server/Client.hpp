@@ -13,6 +13,7 @@
 #include <boost/asio/compose.hpp>
 #include <deque>
 #include <Server.hpp>
+#include <MessageReader.hpp>
 
 namespace ls {
 
@@ -71,6 +72,10 @@ namespace ls {
 		SocketType<tcp> socket;
 
 		std::shared_ptr<Server> server;
+
+
+		MessageReader reader;
+
 
 		// user data:
 
