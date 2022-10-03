@@ -35,7 +35,7 @@ namespace ls {
 		 * \param[in] buf Property buffer.
 		 * \returns True if message parsed and handled successfully; false otherwise.
 		 */
-		bool ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) noexcept;
+		Awaitable<bool> ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) noexcept;
 
 	};
 

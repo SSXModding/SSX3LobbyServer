@@ -42,7 +42,7 @@ namespace ls {
 		return ret;
 	}
 
-	bool MessageReader::ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) noexcept {
+	Awaitable<bool> MessageReader::ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) noexcept {
 		// Create the message instance from the message factory
 		auto message = ls::CreateMessageFromTypeCode(header.typeCode);
 #if 0
@@ -52,17 +52,17 @@ namespace ls {
 
 		// Just handle the message if there's no property data.
 		if(header.payloadSize == 1 || header.payloadSize == 0) {
-			message->HandleClientMessage(server, client);
-			return true;
+			co_await message->HandleClientMessage(server, client);
+			co_return true;
 		}
 
 		// Read in the property buffer.
 		// Fail if this fails
 		if(!message->ReadProperties(buf))
-			return false;
+			co_return false;
 
-		message->HandleClientMessage(server, client);
-		return true;
+		co_await message->HandleClientMessage(server, client);
+		co_return true;
 	}
 
 } // namespace ls

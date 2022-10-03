@@ -25,7 +25,7 @@ struct PingMessage : public ls::MessageBase {
 	}
 
 	ls::Awaitable<void> HandleClientMessage(std::shared_ptr<ls::Server> server, std::shared_ptr<ls::Client> client) override {
-
+		co_return;
 	}
 };
 

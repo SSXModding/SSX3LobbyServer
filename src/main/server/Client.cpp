@@ -65,7 +65,7 @@ namespace ls {
 				}
 
 				// Discard this message if it didn't read successfully
-				if(!server->reader.ReadAndHandleMessage(*header, messagePayloadBuffer, server, shared_from_this()))
+				if(!co_await server->reader.ReadAndHandleMessage(*header, messagePayloadBuffer, server, shared_from_this()))
 					continue;
 
 				// Add to the user's per-IP ratelimit.
