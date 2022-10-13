@@ -73,6 +73,10 @@ namespace ls::common {
 			return value;
 	}
 
+	/**
+	 * A network order value. Is automatically swapped on platforms
+	 * where endian needs swapping.
+	 */
 	template <class T>
 	struct [[gnu::packed]] NetworkOrderValue {
 		constexpr NetworkOrderValue() = default;

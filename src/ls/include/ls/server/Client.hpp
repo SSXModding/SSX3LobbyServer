@@ -10,73 +10,80 @@
 #ifndef SSX3LOBBYSERVER_CLIENT_HPP
 #define SSX3LOBBYSERVER_CLIENT_HPP
 
-#include <boost/asio/compose.hpp>
-#include <deque>
+#include <spdlog/spdlog.h>
 
-#include <ls/server/message/MessageReader.hpp>
+#include <boost/asio/compose.hpp>
+#include <ls/common/Badge.hpp>
+#include <ls/server/message/MessageBase.hpp>
 #include <ls/server/Server.hpp>
 
 namespace ls {
 
 	struct Client : public std::enable_shared_from_this<Client> {
-		Client(SocketType<tcp> socket, std::shared_ptr<Server> server) noexcept;
+		Client(SocketType<tcp> socket, std::shared_ptr<Server> server);
 
-		void Open() noexcept;
+		void Open();
 
-		void Close() noexcept;
+		void Close();
 
-		template<typename Protocol>
+		template <typename Protocol>
 		struct AsyncSendImpl {
 			enum class State {
 				Started, ///< Write has begun.
 				Written	 ///< Write has ended, either successfully or not.
 			};
 
+			explicit constexpr AsyncSendImpl(SocketType<Protocol>& socket, std::vector<std::uint8_t>&& message)
+				: socket(socket),
+				  serializedMessage(std::move(message)) {
+			}
+
 			SocketType<Protocol>& socket;
-			std::unique_ptr<std::vector<std::uint8_t>> serializedMessage;
+			std::vector<std::uint8_t> serializedMessage;
 			State state { State::Started };
 
 			void operator()(auto& self, const error_code& error = {}, std::size_t bytesSent = 0) {
 				switch(state) {
 					case State::Started:
 						state = State::Written;
-						socket.async_write_some(net::buffer(*serializedMessage), std::move(self));
+						socket.async_write_some(net::buffer(serializedMessage), std::move(self));
 						break;
 					case State::Written:
-						serializedMessage.reset();
 						self.complete(error);
 						break;
 				}
 			}
 		};
 
-		template<typename Protocol>
+		template <typename Protocol>
 		AsyncSendImpl(SocketType<Protocol>, std::unique_ptr<std::vector<std::uint8_t>>&&) -> AsyncSendImpl<Protocol>;
 
 		template <net::completion_token_for<void(error_code)> CompletionToken>
-		auto AsyncSend(std::shared_ptr<MessageBase> message, CompletionToken&& token) noexcept {
+		auto AsyncSend(std::shared_ptr<MessageBase> message, CompletionToken&& token) {
 			using CompletionSig = void(error_code);
 
 			// Serialize the message into a buffer used during this operation,
-			// which will be deleted once the operation either completes or fails.
-			std::unique_ptr<std::vector<std::uint8_t>> serialized = std::make_unique<std::vector<std::uint8_t>>();
-			message->Serialize(*serialized);
+			// which will be cleared once the operation either completes or fails.
+			std::vector<std::uint8_t> serialized;
+			message->Serialize(serialized);
 
 			return net::async_compose<CompletionToken, CompletionSig>(AsyncSendImpl { socket, std::move(serialized) }, token, socket);
 		}
 
-		uint32_t GetPing() const noexcept;
-		void SetPing(uint32_t pingMs) noexcept;
+		net::ip::address Address() {
+			return socket.remote_endpoint().address();
+		}
+
+        std::shared_ptr<Server> GetServer() {
+            return server;
+        }
 
 	   private:
-		Awaitable<void> ReaderCoro() noexcept;
+
+		Awaitable<void> ReaderCoro();
 		SocketType<tcp> socket;
 
 		std::shared_ptr<Server> server;
-
-
-		MessageReader reader;
-
 
 		// user data:
 

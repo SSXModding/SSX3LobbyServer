@@ -35,12 +35,7 @@ namespace ls {
 	 * The type for executors to follow.
 	 * This is the basic executor type.
 	 */
-	using BaseExecutorType =
-#ifdef LS_USE_SYSTEM_EXECUTOR
-	net::system_executor;
-#else
-	net::io_context::executor_type;
-#endif
+	using BaseExecutorType = net::io_context::executor_type;
 
 	/**
 	 * The (real) type executors follow.

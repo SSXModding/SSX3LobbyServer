@@ -16,7 +16,7 @@
 #include <boost/asio/io_context.hpp>
 
 #include <ls/asio/AsioConfig.hpp>
-#include "RateLimit.hpp"
+#include <ls/server/RateLimit.hpp>
 
 namespace ls {
 
@@ -36,18 +36,18 @@ namespace ls {
 	};
 
 	struct Server : public std::enable_shared_from_this<Server> {
-		explicit Server(net::io_context& ioc) noexcept;
+		explicit Server(net::io_context& ioc);
 
-		void Start() noexcept;
+		void Start();
 
-		void Stop() noexcept; // TODO: for clean shutdowns
+		void Stop(); // TODO: for clean shutdowns
 
 	   private:
 		friend struct Client;
 		net::io_context& ioc;
 
 
-		Awaitable<void> ListenerCoro(AcceptorType<tcp> acceptor) noexcept;
+		Awaitable<void> ListenerCoro(AcceptorType<tcp> acceptor);
 
 		// TODO: maybe timer for stuff or keep alive
 		// if ~png is sent that much
@@ -57,19 +57,10 @@ namespace ls {
 		// MAJOR TODO: Implement graceful cancellation.
 		// 		       on SIGTERM we should close all connections, the DB, and then exit 0
 
-		ExecutorType MakeExecutor() noexcept {
-	#ifdef LS_USE_SYSTEM_EXECUTOR
-			// This is the executor used for operations.
-			static net::system_executor executor{};
-	#endif
+		ExecutorType executor = MakeExecutor();
 
-			return net::make_strand(
-#ifdef LS_USE_SYSTEM_EXECUTOR
-			executor
-#else
-			ioc.get_executor()
-#endif
-			);
+		ExecutorType MakeExecutor() noexcept {
+			return net::make_strand(ioc.get_executor());
 		}
 
 	};

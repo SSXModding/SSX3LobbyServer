@@ -11,7 +11,6 @@ add_executable(ssx3lobbyserver
 
 		# message classes/handlers
 		src/message/MessageBase.cpp
-		src/message/MessageReader.cpp
 		src/message/messages/PingMessage.cpp
 
 		# TODO: DB/model
@@ -32,10 +31,6 @@ target_link_libraries(ssx3lobbyserver PRIVATE
 target_include_directories(ssx3lobbyserver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_compile_definitions(ssx3lobbyserver PUBLIC
-		# This is broken for now (I don't know why) so I'm keeping it off,
-		# I'll probably fix it later.
-		#-DLS_USE_SYSTEM_EXECUTOR
-
 		-DSPDLOG_FMT_EXTERNAL=1
 
 		# No more io_service! No more io_context::work!

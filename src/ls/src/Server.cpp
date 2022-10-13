@@ -23,11 +23,11 @@ namespace ls {
 	// Game connects to ps2ssx04.ea.com:11000
 	constexpr auto GAME_PORT = 11000;
 
-	Server::Server(net::io_context& ioc) noexcept
+	Server::Server(net::io_context& ioc)
 		: ioc(ioc) {
 	}
 
-	void Server::Start() noexcept {
+	void Server::Start() {
 		net::ip::address address;
 
 		if(auto listen_address = gConfigStore.GetValue<std::string>("listen_address"); listen_address.has_value()) {
@@ -39,27 +39,27 @@ namespace ls {
 			address = net::ip::make_address("0.0.0.0");
 		}
 
-		auto executor = MakeExecutor();
-
 		// Spawn a server on the game port
-		net::co_spawn(executor, shared_from_this()->ListenerCoro(AcceptorType<tcp> { executor, tcp::endpoint { address, GAME_PORT }, true }), net::detached);
+		net::co_spawn(executor, [self = shared_from_this(), address]() {
+			return self->ListenerCoro(AcceptorType<tcp> { self->executor, tcp::endpoint { address, GAME_PORT }, true });
+		}, net::detached);
+
 		// TODO: Buddy port, maybe a UDP thingy if required
 	}
 
-	Awaitable<void> Server::ListenerCoro(AcceptorType<tcp> acceptor) noexcept {
+	Awaitable<void> Server::ListenerCoro(AcceptorType<tcp> acceptor) {
 		auto listen_ep = acceptor.local_endpoint();
 		spdlog::info("Listening on {}:{}", listen_ep.address().to_string(), listen_ep.port());
 
 		for(;;) {
 			auto [ec, socket] = co_await acceptor.async_accept(use_tuple_awaitable);
 
-			if(ec == net::error::operation_aborted)
-				break;
-
 			// should probably draw from context pool/make a new executor for this connection,
 			// but for now this is fine
 			if(!ec)
 				std::make_shared<Client>(std::move(socket), shared_from_this())->Open();
+			else
+				continue; // Cancellation will need this to break on cancels.
 		}
 	}
 

@@ -18,7 +18,7 @@
 namespace ls {
 
 	std::shared_ptr<MessageBase> MessageBase::Create(uint32_t TypeCode) {
-		const auto& map = registeredMap();
+		const auto& map = MessageBase::FactoryMap();
 		auto it = map.find(TypeCode);
 
 		/**
@@ -35,7 +35,7 @@ namespace ls {
 				return myTypeCode;
 			}
 
-			Awaitable<void> HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) override {
+			Awaitable<void> HandleClientMessage(std::shared_ptr<Client> client) override {
 				auto* fccbytes = ((uint8_t*)&myTypeCode);
 
 				spdlog::info("Debug Message FourCC lo: \"{:c}{:c}{:c}{:c}\"", fccbytes[0], fccbytes[1], fccbytes[2], fccbytes[3]);
@@ -43,6 +43,8 @@ namespace ls {
 
 				for(auto [key, value] : properties)
 					spdlog::info("{}: {}", key, value);
+
+				co_return;
 			}
 
 			uint32_t myTypeCode;
@@ -60,37 +62,47 @@ namespace ls {
 	}
 
 	void MessageBase::Serialize(std::vector<std::uint8_t>& outBuf) const {
-		WireMessageHeader header;
-		std::string total;
+		std::string serializedProperties;
 
-		// Serialize all properties.
-		for(auto [key, value] : properties)
-			total += fmt::format("{}={}\n", key, value);
+		// Reserve a sane amount, to avoid allocations when serializing properties
+		// (in most cases; larger messages MIGHT still cause some allocation pressure.)
+		serializedProperties.reserve(512);
+
+		// Serialize properties
+		{
+			auto i = properties.size();
+			for(auto [key, value] : properties)
+				if(--i != 0)
+					serializedProperties += fmt::format("{}={}\n", key, value);
+				else
+					serializedProperties += fmt::format("{}={}", key, value);
+		}
 
 		// Null terminate the property data.
-		total.push_back('\0');
+		serializedProperties.push_back('\0');
 
-		auto len = total.length() - 1;
+		// Create a approiate header for the data.
+		WireMessageHeader header {
+			.typeCode = TypeCode(),
+			.typeCodeHi = 0,
+			.payloadSize = serializedProperties.length() - 1
+		};
 
-		// Fill in the header.
-		header.typeCode = this->TypeCode();
-		header.typeCodeHi = 0;
-		header.payloadSize = len;
+		auto fullLength = sizeof(WireMessageHeader) + serializedProperties.length();
 
-		// Resize the output buffer so we can just copy our hard work to it.
-		outBuf.resize(sizeof(WireMessageHeader) + total.length());
+		// Resize the output buffer to the right size
+		outBuf.resize(fullLength);
 
 		// Write to the output buffer now.
 		memcpy(&outBuf[0], &header, sizeof(WireMessageHeader));
-		memcpy(&outBuf[sizeof(WireMessageHeader)], total.data(), total.length());
+		memcpy(&outBuf[sizeof(WireMessageHeader)], serializedProperties.data(), serializedProperties.length());
 	}
 
 	bool MessageBase::ReadProperties(const std::vector<std::uint8_t>& inBuf) {
-		// Nothing to parse, so return success
+		// Nothing to parse,
+		// which isn't exclusively a failure condition.
 		if(inBuf.empty())
 			return true;
-
-		// Current state of the reader state machine (see below.)
 
 		std::string key;
 		std::string val;

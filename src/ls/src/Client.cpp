@@ -8,6 +8,7 @@
 //
 
 #include <ls/server/Client.hpp>
+#include <ls/server/message/WireMessageHeader.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -17,21 +18,19 @@ namespace ls {
 	constexpr static auto MAX_PAYLOAD_SIZE = (1024 * 1024);
 
 
-	Client::Client(SocketType<tcp> socket, std::shared_ptr<Server> server) noexcept
+	Client::Client(SocketType<tcp> socket, std::shared_ptr<Server> server)
 		: server(server),
 		  socket(std::move(socket)) {
+
 	}
 
-	void Client::Open() noexcept {
-		spdlog::info("Connection opened from {}", socket.remote_endpoint().address().to_string());
-
-		net::co_spawn(socket.get_executor(), [self = shared_from_this()] {
+	void Client::Open() {
+		net::co_spawn(socket.get_executor(), [self = shared_from_this()]() {
 			return self->ReaderCoro();
 		}, net::detached);
-
 	}
 
-	Awaitable<void> Client::ReaderCoro() noexcept {
+	Awaitable<void> Client::ReaderCoro() {
 			char messageHeaderBuffer[sizeof(WireMessageHeader)];
 			WireMessageHeader messageHeader;
 			std::vector<std::uint8_t> messagePayloadBuffer;
@@ -43,53 +42,67 @@ namespace ls {
 			// so the memory can still be reused.
 			messagePayloadBuffer.reserve(512);
 
+			spdlog::info("[{}] Connection opened", Address().to_string());
+
+
 			while(true) {
 				auto [ec, n] = co_await socket.async_read_some(net::buffer(messageHeaderBuffer), use_tuple_awaitable);
 
 				if(n == 0)
 					continue;
 
-				if(ec)
+				if(ec && ec != net::error::operation_aborted) {
+					spdlog::error("[{}] ASIO error: {}", Address().to_string(), ec.message());
 					break;
+				}
 
 				if(n != sizeof(WireMessageHeader)) {
-					spdlog::warn("Malformed message (read {} bytes, when header is {} bytes)", n, sizeof(WireMessageHeader));
+					spdlog::warn("[{}] Malformed message header (read {} bytes, when header is {} bytes)", Address().to_string(), n, sizeof(WireMessageHeader));
 					break;
 				}
 
 				memcpy(&messageHeader, &messageHeaderBuffer[0], sizeof(WireMessageHeader));
 
 				if(messageHeader.payloadSize > MAX_PAYLOAD_SIZE) {
-					spdlog::warn("Malformed message went beyond maximum payload size ({}/{}); closing connection", MAX_PAYLOAD_SIZE, messageHeader.payloadSize);
+					spdlog::warn("[{}] Malformed message went beyond maximum payload size ({}/{}); closing connection", Address().to_string(), MAX_PAYLOAD_SIZE, messageHeader.payloadSize);
 					break;
 				}
 
 				// TODO: I dunno if the property buf is actually null terminated,
-				// if it isn't we can probably remove this
+				// if it isn't we can probably remove addition
 
 				messagePayloadBuffer.resize(messageHeader.payloadSize + 1);
 
 				auto [ payloadEc, payloadN ] = co_await socket.async_read_some(net::buffer(messagePayloadBuffer), use_tuple_awaitable);
 
 				if(payloadN != (messageHeader.payloadSize + 1)) {
-					spdlog::warn("Malformed payload (read {} bytes when we were supposed to read {} bytes)", payloadN, messageHeader.payloadSize + 1);
+					spdlog::warn("[{}] Malformed payload (read {} bytes when we were supposed to read {} bytes)", Address().to_string(), payloadN, messageHeader.payloadSize + 1);
 					break;
 				}
 
-				// Discard this message if it didn't read successfully
-				if(!co_await reader.ReadAndHandleMessage(messageHeader, messagePayloadBuffer, server, shared_from_this()))
-					continue;
+				auto message = ls::MessageBase::Create(messageHeader.typeCode);
 
-				// Add to the user's per-IP ratelimit.
+				// Just handle the message if there's no property data.
+				if(messageHeader.payloadSize == 1 || messageHeader.payloadSize == 0) {
+					co_await message->HandleClientMessage(shared_from_this());
+				} else {
+					// Read in the property buffer.
+					// Fail if this fails
+					if(!message->ReadProperties(messagePayloadBuffer)) {
+						spdlog::warn("[{}] Failed to parse property buffer", Address().to_string());
+						break;
+					}
+
+					co_await message->HandleClientMessage(shared_from_this());
+				}
 			}
 
 			Close();
 	}
 
 
-
-	void Client::Close() noexcept {
-		spdlog::info("Connection closed");
+	void Client::Close() {
+		spdlog::info("[{}] Connection closed", Address().to_string());
 		socket.close();
 	}
 

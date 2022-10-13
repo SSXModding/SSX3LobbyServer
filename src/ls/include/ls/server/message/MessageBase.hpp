@@ -10,31 +10,20 @@
 #ifndef SSX3LOBBYSERVER_MESSAGEBASE_HPP
 #define SSX3LOBBYSERVER_MESSAGEBASE_HPP
 
-#include <iostream>
+#include <ls/asio/AsioConfig.hpp>
+#include <ls/common/FourCC.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-#include <ls/asio/AsioConfig.hpp>
-#include <ls/common/FourCC.hpp>
-
 // Some notes:
 //
-// - The current factory/""reflection"" system heap-allocates EVERY parsed message.
-//		Should an adapter Allocator like the PMR Allocators that allocates via a memory pool be used or something?
-//		(don't really need performance, but we don't want spam parsed messages to DoS the service or require more resources than needed.)
-//		(could also fix above with a ratelimit. which I may do tbh)
-//
-// - Refactor the factory to put messages in specific groups. The reader can then have a
-//		MessageReader& AddGroup(ls::MessageGroup&) noexcept; (which can be chained)
-//
-//		then can do:
-//			reader.AddGroup(ls::SystemMessages())
-//				  .AddGroup(ls::BuddyMessages());
-//
-//		this would allow for buddy port and everything to not allow normal messages,
-//		which is PROBABLY a good idea.
+// - Refactor the factory to put messages in specific groups.
+//	 The client can then check what groups it's allowed to use,
+//	 and if a given message fourcc isn't in that list,
+//	 try to read the next message. This can be done without even allocating
+//	 the attempted message, so heap concerns don't really matter as much.
 //
 
 namespace ls {
@@ -44,13 +33,15 @@ namespace ls {
 	struct Client;
 
 	/**
-	 * Base class for lobby messages.
+	 * Base class for Dirtysock messages.
 	 */
-	struct MessageBase  {
+	struct MessageBase {
 		virtual ~MessageBase() = default;
 
 		/**
 		 * Serialize this message to a output buffer.
+		 *
+		 * \param[out] outBuf Output buffer to serialize to.
 		 */
 		void Serialize(std::vector<std::uint8_t>& outBuf) const;
 
@@ -58,13 +49,21 @@ namespace ls {
 		 * Get a specific message property for writing.
 		 */
 		[[nodiscard]] std::string& GetProperty(const std::string& name) {
-			return properties.at(name);
+			return properties[name]; // Okay for the mutable overload to use "suprising" behaviour of *_map
 		}
 
+		/**
+		 * Get a property for reading.
+		 */
 		[[nodiscard]] const std::string& GetProperty(const std::string& name) const {
 			return properties.at(name);
 		}
 
+		/**
+		 * Get the type code of this message.
+		 *
+		 * \return The message type code.
+		 */
 		virtual std::uint32_t TypeCode() const = 0;
 
 		/**
@@ -72,15 +71,14 @@ namespace ls {
 		 */
 		static std::shared_ptr<MessageBase> Create(std::uint32_t typeCode);
 
-	   protected:
-		friend struct MessageReader;
-
 		/**
 		 * Called when the message parsing is finished, to handle the message.
 		 * Base version does nothing.
 		 * Override to do message specific handling.
+		 *
+		 * It is permitted to call ASIO operations in this handler.
 		 */
-		virtual Awaitable<void> HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) = 0;
+		virtual Awaitable<void> HandleClientMessage(std::shared_ptr<Client> client) = 0;
 
 		/**
 		 * Read the serialized properties from a buffer.
@@ -91,32 +89,34 @@ namespace ls {
 		 */
 		bool ReadProperties(const std::vector<std::uint8_t>& inBuf);
 
+	   private:
+		template <common::FixedString fourcc, class T>
+		friend struct Message;
+
+		static auto& FactoryMap() {
+			static std::unordered_map<uint32_t, std::shared_ptr<MessageBase> (*)()> map;
+			return map;
+		}
+
 		/**
 		 * All properties.
 		 */
 		std::unordered_map<std::string, std::string> properties;
-
-	   private:
-		template<common::FixedString fourcc, class T>
-		friend struct Message;
-
-		static auto& registeredMap() {
-			static std::unordered_map<uint32_t, std::shared_ptr<MessageBase>(*)()> map;
-			return map;
-		}
 	};
 
 	/**
-	 * CRTP helper class for messages. Implements required virtuals; automatically registers,
-	 * the whole shebang.
+	 * CRTP helper class for messages.
+	 * Implements required virtuals; automatically registers, the whole shebang.
+	 *
+	 * Inherit from this.
 	 */
-	template<common::FixedString fourcc, class T>
+	template <common::FixedString fccString, class T>
 	struct Message : public ls::MessageBase {
-		static constexpr auto TYPE_CODE = common::FourCC<fourcc>();
+		static constexpr auto TYPE_CODE = common::FourCC<fccString>();
 
 		constexpr explicit Message()
 			: MessageBase() {
-			(void)registered;
+			static_cast<void>(registered);
 		}
 
 		std::uint32_t TypeCode() const override {
@@ -125,7 +125,7 @@ namespace ls {
 
 	   private:
 		static bool Register() {
-			MessageBase::registeredMap()[Message::TYPE_CODE] = []() -> std::shared_ptr<MessageBase> {
+			MessageBase::FactoryMap()[Message::TYPE_CODE] = []() -> std::shared_ptr<MessageBase> {
 				return std::make_shared<T>();
 			};
 

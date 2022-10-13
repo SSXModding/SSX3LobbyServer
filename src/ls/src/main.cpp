@@ -33,6 +33,7 @@ int main(int argc, char** argv) {
 	clibackend.Process(argc, argv);
 
 	// TODO: Maybe context thread pool.
+	// 	(see asio/thread_pool.hpp)
 
 	// Boot the server up.
 	std::make_shared<ls::Server>(ioc)->Start();

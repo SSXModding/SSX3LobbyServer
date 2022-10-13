@@ -16,7 +16,7 @@ struct PingMessage : public ls::Message<"~png", PingMessage> {
 	explicit PingMessage() {
 	}
 
-	ls::Awaitable<void> HandleClientMessage(std::shared_ptr<ls::Server> server, std::shared_ptr<ls::Client> client) override {
+	ls::Awaitable<void> HandleClientMessage(std::shared_ptr<ls::Client> client) override {
 		co_return;
 	}
 };

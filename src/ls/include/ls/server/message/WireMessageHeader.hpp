@@ -11,7 +11,6 @@
 #define SSX3LOBBYSERVER_WIREMESSAGEHEADER_HPP
 
 #include <cstdint>
-
 #include <ls/common/ByteSwap.hpp>
 
 namespace ls {
@@ -23,22 +22,22 @@ namespace ls {
 		/**
 		 * Message type code.
 		 */
-		common::NetworkOrderValue<std::uint32_t> typeCode{};
+		std::uint32_t typeCode {};
 
 		/**
 		 * High fourcc. Seems to only be used by responses.
 		 */
-		common::NetworkOrderValue<std::uint32_t> typeCodeHi{};
+		std::uint32_t typeCodeHi {};
 
 		/**
 		 * The size of the payload, which immediately follows this structure.
 		 */
-		common::NetworkOrderValue<std::uint32_t> payloadSize{};
+		common::NetworkOrderValue<std::uint32_t> payloadSize {};
 	};
 
 	// Sanity checking.
 	static_assert(sizeof(WireMessageHeader) == 12, "Wire message header size is invalid");
 
-}
+} // namespace ls
 
 #endif // SSX3LOBBYSERVER_WIREMESSAGEHEADER_HPP
