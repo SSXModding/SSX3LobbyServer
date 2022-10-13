@@ -81,7 +81,7 @@ namespace ls {
 		// Null terminate the property data.
 		serializedProperties.push_back('\0');
 
-		// Create a approiate header for the data.
+		// Create an appropriate header for the data.
 		WireMessageHeader header {
 			.typeCode = TypeCode(),
 			.typeCodeHi = 0,
@@ -108,6 +108,8 @@ namespace ls {
 		std::string val;
 
 		size_t inputIndex = 0;
+
+		// TODO: Investigate rewriting this using ragel?
 
 		enum class ReaderState {
 			InKey,	///< The state machine is currently parsing a key.
