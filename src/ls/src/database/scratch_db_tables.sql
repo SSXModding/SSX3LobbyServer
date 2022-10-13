@@ -1,5 +1,5 @@
--- Gonna use sqlite3 or mariadb for simplicity. This is mostly scratch until I actually implement
--- accounts, personas, and race ranking history.
+-- Gonna use mariadb. This is mostly a scratch file for writing things down
+-- until I actually implement these things into the production server.
 
 CREATE TABLE "Users" (
 	"Id"	INTEGER NOT NULL, -- UID
@@ -17,6 +17,7 @@ CREATE TABLE "Users" (
 CREATE TABLE "UserPersonas" (
     -- This ID is the same as the user account it is for.
 	"Id" INTEGER NOT NULL,
+
 	-- Null in this case means the persona
 	-- isn't created/selectable for this user.
 	--

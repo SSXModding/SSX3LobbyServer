@@ -7,13 +7,12 @@
 // Text is provided in LICENSE.
 //
 
-#include "Server.hpp"
+#include <ls/server/Server.hpp>
 
 #include <spdlog/spdlog.h>
 
-#include <config/ConfigStore.hpp>
-
-#include "Client.hpp"
+#include <ls/config/ConfigStore.hpp>
+#include <ls/server/Client.hpp>
 
 extern ls::ConfigStore gConfigStore;
 
@@ -31,9 +30,7 @@ namespace ls {
 	void Server::Start() noexcept {
 		net::ip::address address;
 
-		auto listen_address = gConfigStore.GetValue<std::string>("listen_address");
-
-		if(listen_address.has_value()) {
+		if(auto listen_address = gConfigStore.GetValue<std::string>("listen_address"); listen_address.has_value()) {
 			address = net::ip::make_address(listen_address.value());
 		} else {
 			// Ok, then we can just use 0.0.0.0
@@ -63,7 +60,6 @@ namespace ls {
 			// but for now this is fine
 			if(!ec)
 				std::make_shared<Client>(std::move(socket), shared_from_this())->Open();
-
 		}
 	}
 

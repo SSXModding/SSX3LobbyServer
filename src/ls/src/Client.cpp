@@ -7,7 +7,7 @@
 // Text is provided in LICENSE.
 //
 
-#include "Client.hpp"
+#include <ls/server/Client.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -33,6 +33,7 @@ namespace ls {
 
 	Awaitable<void> Client::ReaderCoro() noexcept {
 			char messageHeaderBuffer[sizeof(WireMessageHeader)];
+			WireMessageHeader messageHeader;
 			std::vector<std::uint8_t> messagePayloadBuffer;
 
 			// Reserve a decent amount of bytes upfront so that
@@ -40,7 +41,7 @@ namespace ls {
 			//
 			// Bigger messages probably will; however the loop does not destroy the vector,
 			// so the memory can still be reused.
-			messagePayloadBuffer.reserve(256);
+			messagePayloadBuffer.reserve(512);
 
 			while(true) {
 				auto [ec, n] = co_await socket.async_read_some(net::buffer(messageHeaderBuffer), use_tuple_awaitable);
@@ -56,31 +57,27 @@ namespace ls {
 					break;
 				}
 
-				auto header = reader.ReadHeader((const uint8_t*)&messageHeaderBuffer[0]);
+				memcpy(&messageHeader, &messageHeaderBuffer[0], sizeof(WireMessageHeader));
 
-				// Discard if the message header could not be read.
-				if(!header.has_value())
-					continue;
-
-				if(header->payloadSize > MAX_PAYLOAD_SIZE) {
-					spdlog::warn("Malformed message went beyond maximum payload size ({}); closing connection", MAX_PAYLOAD_SIZE);
+				if(messageHeader.payloadSize > MAX_PAYLOAD_SIZE) {
+					spdlog::warn("Malformed message went beyond maximum payload size ({}/{}); closing connection", MAX_PAYLOAD_SIZE, messageHeader.payloadSize);
 					break;
 				}
 
 				// TODO: I dunno if the property buf is actually null terminated,
 				// if it isn't we can probably remove this
 
-				messagePayloadBuffer.resize(header->payloadSize + 1);
+				messagePayloadBuffer.resize(messageHeader.payloadSize + 1);
 
 				auto [ payloadEc, payloadN ] = co_await socket.async_read_some(net::buffer(messagePayloadBuffer), use_tuple_awaitable);
 
-				if(payloadN != (header->payloadSize + 1)) {
-					spdlog::warn("Malformed payload (read {} bytes when we were supposed to read {} bytes)", payloadN, header->payloadSize + 1);
+				if(payloadN != (messageHeader.payloadSize + 1)) {
+					spdlog::warn("Malformed payload (read {} bytes when we were supposed to read {} bytes)", payloadN, messageHeader.payloadSize + 1);
 					break;
 				}
 
 				// Discard this message if it didn't read successfully
-				if(!co_await reader.ReadAndHandleMessage(*header, messagePayloadBuffer, server, shared_from_this()))
+				if(!co_await reader.ReadAndHandleMessage(messageHeader, messagePayloadBuffer, server, shared_from_this()))
 					continue;
 
 				// Add to the user's per-IP ratelimit.
