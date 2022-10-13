@@ -10,7 +10,6 @@
 #include <spdlog/spdlog.h>
 
 #include <ls/config/backends/CommandLineConfigBackend.hpp>
-
 #include <ls/config/ConfigStore.hpp>
 #include <ls/server/Server.hpp>
 

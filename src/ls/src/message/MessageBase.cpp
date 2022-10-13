@@ -7,12 +7,11 @@
 // Text is provided in LICENSE.
 //
 
-#include <ls/server/message/MessageBase.hpp>
-
 #include <fmt/core.h>
 #include <spdlog/spdlog.h>
 
 #include <ls/asio/AsioConfig.hpp>
+#include <ls/server/message/MessageBase.hpp>
 #include <ls/server/message/WireMessageHeader.hpp>
 
 namespace ls {
@@ -137,7 +136,7 @@ namespace ls {
 
 				case '\n':
 					if(state == ReaderState::InValue) {
-						//printf("state transition - to key\n");
+						// printf("state transition - to key\n");
 
 						properties[key] = val;
 

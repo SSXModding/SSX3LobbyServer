@@ -11,9 +11,8 @@
 #define SSX3LOBBYSERVER_COMMANDLINECONFIGBACKEND_HPP
 
 #include <cstdint>
-#include <string>
-
 #include <ls/config/ConfigStore.hpp>
+#include <string>
 
 namespace ls {
 	/**

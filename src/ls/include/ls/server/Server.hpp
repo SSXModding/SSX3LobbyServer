@@ -10,18 +10,12 @@
 #ifndef SSX3LOBBYSERVER_SERVER_HPP
 #define SSX3LOBBYSERVER_SERVER_HPP
 
-#include <boost/asio/awaitable.hpp>
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
-#include <boost/asio/io_context.hpp>
-
 #include <ls/asio/AsioConfig.hpp>
 #include <ls/server/RateLimit.hpp>
 
 namespace ls {
 
 	struct PerIPData {
-
 		/**
 		 * Number of connections from this IP
 		 */
@@ -30,9 +24,7 @@ namespace ls {
 		/**
 		 * Message rate limit for this IP..
 		 */
-		RateLimit<> messageRateLimit{ 15 /* messages */, 1 /* second */, 5 /* seconds cooldown */ };
-
-
+		RateLimit<> messageRateLimit { 15 /* messages */, 1 /* second */, 5 /* seconds cooldown */ };
 	};
 
 	struct Server : public std::enable_shared_from_this<Server> {
@@ -45,7 +37,6 @@ namespace ls {
 	   private:
 		friend struct Client;
 		net::io_context& ioc;
-
 
 		Awaitable<void> ListenerCoro(AcceptorType<tcp> acceptor);
 
@@ -62,7 +53,6 @@ namespace ls {
 		ExecutorType MakeExecutor() noexcept {
 			return net::make_strand(ioc.get_executor());
 		}
-
 	};
 
 } // namespace ls

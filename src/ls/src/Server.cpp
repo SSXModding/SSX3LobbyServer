@@ -7,12 +7,13 @@
 // Text is provided in LICENSE.
 //
 
-#include <ls/server/Server.hpp>
-
 #include <spdlog/spdlog.h>
 
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
 #include <ls/config/ConfigStore.hpp>
 #include <ls/server/Client.hpp>
+#include <ls/server/Server.hpp>
 
 extern ls::ConfigStore gConfigStore;
 
@@ -40,9 +41,11 @@ namespace ls {
 		}
 
 		// Spawn a server on the game port
-		net::co_spawn(executor, [self = shared_from_this(), address]() {
+		net::co_spawn(
+		executor, [self = shared_from_this(), address]() {
 			return self->ListenerCoro(AcceptorType<tcp> { self->executor, tcp::endpoint { address, GAME_PORT }, true });
-		}, net::detached);
+		},
+		net::detached);
 
 		// TODO: Buddy port, maybe a UDP thingy if required
 	}

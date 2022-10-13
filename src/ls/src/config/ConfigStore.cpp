@@ -29,5 +29,4 @@ namespace ls {
 		values[key] = value;
 	}
 
-
-}
+} // namespace ls

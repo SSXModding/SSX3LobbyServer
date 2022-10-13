@@ -7,12 +7,11 @@
 // Text is provided in LICENSE.
 //
 
-#include <ls/config/backends/CommandLineConfigBackend.hpp>
-
 #include <boost/asio/version.hpp>
 #include <boost/program_options.hpp>
 #include <boost/version.hpp>
 #include <iostream>
+#include <ls/config/backends/CommandLineConfigBackend.hpp>
 
 namespace po = boost::program_options;
 
