@@ -10,8 +10,8 @@
 #ifndef SSX3LOBBYSERVER_RATELIMIT_HPP
 #define SSX3LOBBYSERVER_RATELIMIT_HPP
 
-#include <cstdint>
 #include <chrono>
+#include <cstdint>
 
 namespace ls {
 	/**
@@ -76,7 +76,7 @@ namespace ls {
 		enum class Status : std::uint8_t {
 			NotActive,
 			CoolingDown
-		} status{Status::NotActive};
+		} status { Status::NotActive };
 
 		// initalized in the constructor
 		std::uint32_t cooldown_time;

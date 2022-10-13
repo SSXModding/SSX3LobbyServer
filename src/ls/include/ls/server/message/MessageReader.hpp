@@ -10,9 +10,10 @@
 #ifndef SSX3LOBBYSERVER_MESSAGEREADER_HPP
 #define SSX3LOBBYSERVER_MESSAGEREADER_HPP
 
-#include <MessageBase.hpp>
 #include <optional>
-#include <WireMessageHeader.hpp>
+
+#include <ls/server/message/MessageBase.hpp>
+#include <ls/server/message/WireMessageHeader.hpp>
 
 namespace ls {
 
@@ -21,12 +22,10 @@ namespace ls {
 	 */
 	struct MessageReader {
 
-		/**
-		 * Read the header of a dirtysock message.
-		 * \param[in] buf Header buffer.
-		 * \return A header on success, nullopt otherwise.
-		 */
-		std::optional<WireMessageHeader> ReadHeader(const std::uint8_t* buf) noexcept;
+
+		// I don't think this should return an awaitable. Instead, I think this should have a composed
+		// async op called by the server to handle a message, and a synchronous version for simple callers.
+		// Then we can put this in common and live happy.
 
 		/**
 		 * Read the rest of and then handle (dispatching to the HandleClientMessage() function) a received message.

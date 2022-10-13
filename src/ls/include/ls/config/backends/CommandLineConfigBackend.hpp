@@ -10,9 +10,10 @@
 #ifndef SSX3LOBBYSERVER_COMMANDLINECONFIGBACKEND_HPP
 #define SSX3LOBBYSERVER_COMMANDLINECONFIGBACKEND_HPP
 
-#include <config/ConfigStore.hpp>
 #include <cstdint>
 #include <string>
+
+#include <ls/config/ConfigStore.hpp>
 
 namespace ls {
 	/**

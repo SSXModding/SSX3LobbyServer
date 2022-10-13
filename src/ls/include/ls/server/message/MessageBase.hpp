@@ -10,13 +10,14 @@
 #ifndef SSX3LOBBYSERVER_MESSAGEBASE_HPP
 #define SSX3LOBBYSERVER_MESSAGEBASE_HPP
 
-#include <FourCC.hpp>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-#include <asio/AsioConfig.hpp>
+#include <ls/asio/AsioConfig.hpp>
+#include <ls/common/FourCC.hpp>
 
 // Some notes:
 //
@@ -35,8 +36,6 @@
 //		this would allow for buddy port and everything to not allow normal messages,
 //		which is PROBABLY a good idea.
 //
-// - Get rid of MessageReader, Client can handle things itself (and saves 1 byte+padding)?
-//
 
 namespace ls {
 
@@ -47,7 +46,7 @@ namespace ls {
 	/**
 	 * Base class for lobby messages.
 	 */
-	struct MessageBase {
+	struct MessageBase  {
 		virtual ~MessageBase() = default;
 
 		/**
@@ -56,15 +55,22 @@ namespace ls {
 		void Serialize(std::vector<std::uint8_t>& outBuf) const;
 
 		/**
-		 * Call this when creating a response message to immediately
-		 * create any properties which need to be sent with this message.
-		 */
-		virtual void CreateDefaultProperties();
-
-		/**
 		 * Get a specific message property for writing.
 		 */
-		std::string& GetProperty(const std::string& name);
+		[[nodiscard]] std::string& GetProperty(const std::string& name) {
+			return properties.at(name);
+		}
+
+		[[nodiscard]] const std::string& GetProperty(const std::string& name) const {
+			return properties.at(name);
+		}
+
+		virtual std::uint32_t TypeCode() const = 0;
+
+		/**
+		 * Create a message.
+		 */
+		static std::shared_ptr<MessageBase> Create(std::uint32_t typeCode);
 
 	   protected:
 		friend struct MessageReader;
@@ -74,7 +80,7 @@ namespace ls {
 		 * Base version does nothing.
 		 * Override to do message specific handling.
 		 */
-		virtual Awaitable<void> HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client);
+		virtual Awaitable<void> HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) = 0;
 
 		/**
 		 * Read the serialized properties from a buffer.
@@ -86,52 +92,48 @@ namespace ls {
 		bool ReadProperties(const std::vector<std::uint8_t>& inBuf);
 
 		/**
-		 * The type code.
-		 * This is expected to be set by the read operation.
-		 */
-		uint32_t typeCode;
-
-		/**
 		 * All properties.
 		 */
 		std::unordered_map<std::string, std::string> properties;
+
+	   private:
+		template<common::FixedString fourcc, class T>
+		friend struct Message;
+
+		static auto& registeredMap() {
+			static std::unordered_map<uint32_t, std::shared_ptr<MessageBase>(*)()> map;
+			return map;
+		}
 	};
 
-	namespace detail {
-		using MessageFactory = std::shared_ptr<MessageBase> (*)();
-		void RegisterMessage(uint32_t typeCode, MessageFactory factory);
+	/**
+	 * CRTP helper class for messages. Implements required virtuals; automatically registers,
+	 * the whole shebang.
+	 */
+	template<common::FixedString fourcc, class T>
+	struct Message : public ls::MessageBase {
+		static constexpr auto TYPE_CODE = common::FourCC<fourcc>();
 
-		// Registers a message into the internal map.
-		template <class T, uint32_t TypeCode>
-		struct MessageRegistrar {
-			MessageRegistrar() {
-				RegisterMessage(TypeCode, &MessageRegistrar<T, TypeCode>::createMessage);
-			}
+		constexpr explicit Message()
+			: MessageBase() {
+			(void)registered;
+		}
 
-		   private:
-			// the factory function...
-			static std::shared_ptr<MessageBase> createMessage() {
+		std::uint32_t TypeCode() const override {
+			return TYPE_CODE;
+		}
+
+	   private:
+		static bool Register() {
+			MessageBase::registeredMap()[Message::TYPE_CODE] = []() -> std::shared_ptr<MessageBase> {
 				return std::make_shared<T>();
-			}
-		};
+			};
 
-	} // namespace detail
+			return true;
+		}
 
-	/**
-	 * Register a message into the "reflection" system.
-	 */
-#define LSRegisterMessage(TypeCode, T)                                \
-	static ls::detail::MessageRegistrar<T, TypeCode> __registrar_##T; \
-	auto* __hack_forcedep__##T = &__registrar_##T;
-
-	/**
-	 * Create a message from type code.
-	 * Essentially a very very limited form of "reflection".
-	 *
-	 * Returns a "debug" message or nullptr if the factory collection
-	 * doesn't have the specific type code in it.
-	 */
-	std::shared_ptr<MessageBase> CreateMessageFromTypeCode(uint32_t TypeCode);
+		static inline bool registered = Register();
+	};
 
 } // namespace ls
 

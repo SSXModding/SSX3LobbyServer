@@ -9,24 +9,14 @@
 
 #include <spdlog/spdlog.h>
 
-#include "Client.hpp"
-#include "MessageBase.hpp"
+#include <ls/server/Client.hpp>
+#include <ls/server/message/MessageBase.hpp>
 
-constexpr static auto TYPE_CODE = ls::FourCCValue("~png");
-
-struct PingMessage : public ls::MessageBase {
-	PingMessage()
-		: MessageBase() {
-		typeCode = TYPE_CODE;
-	}
-
-	void CreateDefaultProperties() override {
-		properties["TIME"] = "";
+struct PingMessage : public ls::Message<"~png", PingMessage> {
+	explicit PingMessage() {
 	}
 
 	ls::Awaitable<void> HandleClientMessage(std::shared_ptr<ls::Server> server, std::shared_ptr<ls::Client> client) override {
 		co_return;
 	}
 };
-
-LSRegisterMessage(TYPE_CODE, PingMessage);

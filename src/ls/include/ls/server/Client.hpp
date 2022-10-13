@@ -12,8 +12,9 @@
 
 #include <boost/asio/compose.hpp>
 #include <deque>
-#include <Server.hpp>
-#include <MessageReader.hpp>
+
+#include <ls/server/message/MessageReader.hpp>
+#include <ls/server/Server.hpp>
 
 namespace ls {
 

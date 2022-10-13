@@ -15,7 +15,7 @@
 #include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 
-#include <asio/AsioConfig.hpp>
+#include <ls/asio/AsioConfig.hpp>
 #include "RateLimit.hpp"
 
 namespace ls {
@@ -54,12 +54,18 @@ namespace ls {
 
 		// TODO: hold the DB here
 
+		// MAJOR TODO: Implement graceful cancellation.
+		// 		       on SIGTERM we should close all connections, the DB, and then exit 0
 
 		ExecutorType MakeExecutor() noexcept {
+	#ifdef LS_USE_SYSTEM_EXECUTOR
+			// This is the executor used for operations.
+			static net::system_executor executor{};
+	#endif
+
 			return net::make_strand(
 #ifdef LS_USE_SYSTEM_EXECUTOR
-			// This is ugly but if we're here we're using system_executor.
-			net::system_executor {}
+			executor
 #else
 			ioc.get_executor()
 #endif

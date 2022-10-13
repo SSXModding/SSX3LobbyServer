@@ -7,36 +7,17 @@
 // Text is provided in LICENSE.
 //
 
-#include "MessageReader.hpp"
-
-#include "Client.hpp"
-
-#include <ByteSwap.hpp>
-#include <cstring>
+#include <ls/server/Client.hpp>
+#include <ls/server/message/MessageReader.hpp>
 
 namespace ls {
 
-	std::optional<WireMessageHeader> MessageReader::ReadHeader(const std::uint8_t* buf) noexcept {
-		WireMessageHeader ret;
-
-		if(buf == nullptr)
-			return std::nullopt;
-
-		// Read the message header
-		memcpy(&ret, &buf[0], sizeof(WireMessageHeader));
-
-		// fix the endian on payload size
-		ret.payloadSize = LSNetworkToHost32(ret.payloadSize);
-
-		return ret;
-	}
-
 	Awaitable<bool> MessageReader::ReadAndHandleMessage(const WireMessageHeader& header, const std::vector<std::uint8_t>& buf, std::shared_ptr<Server> server, std::shared_ptr<Client> client) noexcept {
 		// Create the message instance from the message factory
-		auto message = ls::CreateMessageFromTypeCode(header.typeCode);
+		auto message = ls::MessageBase::Create(header.typeCode);
 #if 0
 		if(!message)
-			return false;
+			co_return false;
 #endif
 
 		// Just handle the message if there's no property data.

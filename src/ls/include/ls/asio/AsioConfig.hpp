@@ -14,16 +14,14 @@
 #ifndef SSX3LOBBYSERVER_ASIOCONFIG_HPP
 #define SSX3LOBBYSERVER_ASIOCONFIG_HPP
 
+#include <boost/asio/as_tuple.hpp>
+#include <boost/asio/awaitable.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
-
-#include <boost/asio/as_tuple.hpp>
-#include <boost/asio/awaitable.hpp>
-#include <boost/asio/use_awaitable.hpp>
-
 #include <boost/asio/strand.hpp>
 #include <boost/asio/system_executor.hpp>
+#include <boost/asio/use_awaitable.hpp>
 
 namespace ls {
 
@@ -39,9 +37,9 @@ namespace ls {
 	 */
 	using BaseExecutorType =
 #ifdef LS_USE_SYSTEM_EXECUTOR
-		net::system_executor;
+	net::system_executor;
 #else
-		net::io_context::executor_type;
+	net::io_context::executor_type;
 #endif
 
 	/**
@@ -53,8 +51,7 @@ namespace ls {
 	 * CompletionToken for allowing usage of coroutines w/o exception handling.
 	 * \see Boost.Asio CompletionToken
 	 */
-	constexpr inline auto use_tuple_awaitable = net::as_tuple(net::use_awaitable_t<ExecutorType>{});
-
+	constexpr inline auto use_tuple_awaitable = net::as_tuple(net::use_awaitable_t<ExecutorType> {});
 
 	/**
 	 * Awaitable type (configured for the current executor)
@@ -65,14 +62,11 @@ namespace ls {
 	template <typename Protocol>
 	using SocketType = net::basic_stream_socket<Protocol, ExecutorType>;
 
-//	using TcpSocketType = SocketType<tcp>;
-//	using UnixStreamSocketType = SocketType<net::local::stream_protocol>;
-
-	using TimerType = net::basic_waitable_timer<std::chrono::steady_clock, net::wait_traits<std::chrono::steady_clock>, ExecutorType>;
+	using SteadyTimerType = net::basic_waitable_timer<std::chrono::steady_clock, net::wait_traits<std::chrono::steady_clock>, ExecutorType>;
 
 	template <typename Protocol>
 	using AcceptorType = net::basic_socket_acceptor<Protocol, ExecutorType>;
 
-} // namespace collab3::core
+} // namespace ls
 
 #endif // SSX3LOBBYSERVER_ASIOCONFIG_HPP

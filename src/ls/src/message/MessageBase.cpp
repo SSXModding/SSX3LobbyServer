@@ -7,38 +7,18 @@
 // Text is provided in LICENSE.
 //
 
-#include "MessageBase.hpp"
+#include <ls/server/message/MessageBase.hpp>
 
 #include <fmt/core.h>
 #include <spdlog/spdlog.h>
 
-#include <ByteSwap.hpp>
-#include <CofuSingleton.hpp>
-
-#include "asio/AsioConfig.hpp"
-#include "WireMessageHeader.hpp"
+#include <ls/asio/AsioConfig.hpp>
+#include <ls/server/message/WireMessageHeader.hpp>
 
 namespace ls {
 
-	// TODO: move message factory to separate implementation file
-	namespace detail {
-
-		static ls::CofuSingleton<std::unordered_map<uint32_t, ls::detail::MessageFactory>> MessageFactoryMap;
-
-		void RegisterMessage(uint32_t typeCode, MessageFactory factory) {
-			auto& map = MessageFactoryMap();
-			auto it = map.find(typeCode);
-
-			if(it != map.end())
-				return;
-
-			map.insert({ typeCode, factory });
-		}
-
-	} // namespace detail
-
-	std::shared_ptr<MessageBase> CreateMessageFromTypeCode(uint32_t TypeCode) {
-		const auto& map = detail::MessageFactoryMap();
+	std::shared_ptr<MessageBase> MessageBase::Create(uint32_t TypeCode) {
+		const auto& map = registeredMap();
 		auto it = map.find(TypeCode);
 
 		/**
@@ -48,11 +28,15 @@ namespace ls {
 		 */
 		struct DebugMessage : MessageBase {
 			explicit DebugMessage(uint32_t TypeCode) {
-				this->typeCode = TypeCode;
+				myTypeCode = TypeCode;
+			}
+
+			std::uint32_t TypeCode() const override {
+				return myTypeCode;
 			}
 
 			Awaitable<void> HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) override {
-				auto* fccbytes = ((uint8_t*)&typeCode);
+				auto* fccbytes = ((uint8_t*)&myTypeCode);
 
 				spdlog::info("Debug Message FourCC lo: \"{:c}{:c}{:c}{:c}\"", fccbytes[0], fccbytes[1], fccbytes[2], fccbytes[3]);
 				spdlog::info("Debug Message Properties:");
@@ -60,6 +44,8 @@ namespace ls {
 				for(auto [key, value] : properties)
 					spdlog::info("{}: {}", key, value);
 			}
+
+			uint32_t myTypeCode;
 		};
 
 		if(it == map.end())
@@ -87,9 +73,9 @@ namespace ls {
 		auto len = total.length() - 1;
 
 		// Fill in the header.
-		header.typeCode = this->typeCode; // TODO: do I need to HostToNetwork32 this?
-		header.typeCodeHi = 0x00000000;	  // fill
-		header.payloadSize = LSHostToNetwork32(len);
+		header.typeCode = this->TypeCode();
+		header.typeCodeHi = 0;
+		header.payloadSize = len;
 
 		// Resize the output buffer so we can just copy our hard work to it.
 		outBuf.resize(sizeof(WireMessageHeader) + total.length());
@@ -177,17 +163,6 @@ namespace ls {
 
 		// Parse succeeded
 		return true;
-	}
-
-	Awaitable<void> MessageBase::HandleClientMessage(std::shared_ptr<Server> server, std::shared_ptr<Client> client) {
-		co_return;
-	}
-
-	void MessageBase::CreateDefaultProperties() {
-	}
-
-	std::string& MessageBase::GetProperty(const std::string& name) {
-		return properties[name];
 	}
 
 } // namespace ls

@@ -1,30 +1,25 @@
 add_executable(ssx3lobbyserver
 
 		# Configuration code
-		config/ConfigStore.cpp
-		config/backends/CommandLineConfigBackend.cpp
+		src/config/ConfigStore.cpp
+		src/config/backends/CommandLineConfigBackend.cpp
 
 		# Server code
-		server/asio/AsioImpl.cpp
-		server/MessageBase.cpp
-		server/MessageReader.cpp
-		server/Server.cpp
-		server/Client.cpp
+		src/asio/AsioImpl.cpp
+		src/Server.cpp
+		src/Client.cpp
+
+		# message classes/handlers
+		src/message/MessageBase.cpp
+		src/message/MessageReader.cpp
+		src/message/messages/PingMessage.cpp
 
 		# TODO: DB/model
 
-		# message classes/handlers
-		server/messages/PingMessage.cpp
-
 		# main entry
-		main.cpp
+		src/main.cpp
 )
 
-set_target_properties(ssx3lobbyserver PROPERTIES
-		CXX_STANDARD 20
-		CXX_EXTENSIONS ON
-		CXX_STANDARD_REQUIRED ON
-)
 
 target_link_libraries(ssx3lobbyserver PRIVATE
 		ls::common
@@ -34,14 +29,12 @@ target_link_libraries(ssx3lobbyserver PRIVATE
 		Boost::program_options
 )
 
-target_include_directories(ssx3lobbyserver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-
-# FIXME: remove
-target_include_directories(ssx3lobbyserver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/server)
+target_include_directories(ssx3lobbyserver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_compile_definitions(ssx3lobbyserver PUBLIC
-		# Comment if this causes a problem on your system
-		-DLS_USE_SYSTEM_EXECUTOR
+		# This is broken for now (I don't know why) so I'm keeping it off,
+		# I'll probably fix it later.
+		#-DLS_USE_SYSTEM_EXECUTOR
 
 		-DSPDLOG_FMT_EXTERNAL=1
 

@@ -12,6 +12,8 @@
 
 #include <cstdint>
 
+#include <ls/common/ByteSwap.hpp>
+
 namespace ls {
 
 	/**
@@ -21,17 +23,17 @@ namespace ls {
 		/**
 		 * Message type code.
 		 */
-		uint32_t typeCode{};
+		common::NetworkOrderValue<std::uint32_t> typeCode{};
 
 		/**
 		 * High fourcc. Seems to only be used by responses.
 		 */
-		uint32_t typeCodeHi{};
+		common::NetworkOrderValue<std::uint32_t> typeCodeHi{};
 
 		/**
 		 * The size of the payload, which immediately follows this structure.
 		 */
-		uint32_t payloadSize{};
+		common::NetworkOrderValue<std::uint32_t> payloadSize{};
 	};
 
 	// Sanity checking.
