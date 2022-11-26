@@ -16,7 +16,7 @@ namespace ls {
 	struct Server;
 
 	struct Client : public std::enable_shared_from_this<Client> {
-		Client(SocketType<tcp> socket, std::shared_ptr<Server> server);
+		Client(SocketType<tcp> socket, Server& server);
 
 		/**
 		 * Called to open the connection.
@@ -32,7 +32,7 @@ namespace ls {
 			return socket.remote_endpoint().address();
 		}
 
-		std::shared_ptr<Server> GetServer() {
+		Server& GetServer() {
 			return server;
 		}
 
@@ -40,7 +40,7 @@ namespace ls {
 		Awaitable<void> ReaderCoro();
 		SocketType<tcp> socket;
 
-		std::shared_ptr<Server> server;
+		Server& server;
 
 		// user data:
 

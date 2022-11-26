@@ -7,9 +7,8 @@
 // Text is provided in LICENSE.
 //
 
-// This file provides typedefs for Asio which change
-// depending on if we're using the system executor or not
-// (and also some niceties that don't change.)
+// This file provides type definitions for Asio
+// which are used throughout ls.
 
 #ifndef SSX3LOBBYSERVER_ASIOCONFIG_HPP
 #define SSX3LOBBYSERVER_ASIOCONFIG_HPP
@@ -35,7 +34,7 @@ namespace ls {
 	 * The type for executors to follow.
 	 * This is the basic executor type.
 	 */
-	using BaseExecutorType = net::io_context::executor_type;
+	using BaseExecutorType = net::system_executor;
 
 	/**
 	 * The (real) type executors follow.

@@ -17,7 +17,7 @@
 
 namespace ls {
 
-	Client::Client(SocketType<tcp> socket, std::shared_ptr<Server> server)
+	Client::Client(SocketType<tcp> socket, Server& server)
 		: server(server),
 		  socket(std::move(socket)) {
 	}
@@ -34,19 +34,19 @@ namespace ls {
 		spdlog::info("[{}] Connection opened", Address().to_string());
 
 		while(true) {
-			auto [readError, messagePtr] = co_await AsyncReadMessage(socket, use_tuple_awaitable);
+			auto [ec, messagePtr] = co_await AsyncReadMessage(socket, use_tuple_awaitable);
 
-			if(!readError) {
-				if(readError.type == ReadError::Type::AsioError)
-					spdlog::warn("[{}] Asio read error: {}", Address().to_string(), readError.asioError.message());
-				else {
-					spdlog::warn("[{}] Read error: {}", Address().to_string(), readError.what);
-				}
-
+			if(ec) {
+				spdlog::warn("[{}] FUCK {}",Address().to_string(), ec.message());
+				if(ec != net::error::operation_aborted && ec != net::error::eof)
+					spdlog::warn("[{}] Asio read error: {}", Address().to_string(), ec.message());
+				else
+					if(ec == net::error::operation_aborted)
+						spdlog::warn("[{}] Client read timeout, closing connection", Address().to_string());
 				break;
-			} else {
-				co_await messagePtr->HandleClientMessage(shared_from_this());
 			}
+
+			co_await messagePtr->HandleClientMessage(shared_from_this());
 		}
 
 		Close();

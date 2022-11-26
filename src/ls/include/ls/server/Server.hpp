@@ -11,7 +11,6 @@
 #define SSX3LOBBYSERVER_SERVER_HPP
 
 #include <ls/asio/AsioConfig.hpp>
-#include <ls/server/RateLimit.hpp>
 
 namespace ls {
 
@@ -24,19 +23,16 @@ namespace ls {
 		/**
 		 * Message rate limit for this IP..
 		 */
-		RateLimit<> messageRateLimit { 15 /* messages */, 1 /* second */, 5 /* seconds cooldown */ };
+		//RateLimit<> messageRateLimit { 15 /* messages */, 1 /* second */, 5 /* seconds cooldown */ };
 	};
 
 	struct Server : public std::enable_shared_from_this<Server> {
-		explicit Server(net::io_context& ioc);
-
 		void Start();
 
 		void Stop(); // TODO: for clean shutdowns
 
 	   private:
 		friend struct Client;
-		net::io_context& ioc;
 
 		Awaitable<void> ListenerCoro(AcceptorType<tcp> acceptor);
 
@@ -51,7 +47,7 @@ namespace ls {
 		ExecutorType executor = MakeExecutor();
 
 		ExecutorType MakeExecutor() noexcept {
-			return net::make_strand(ioc.get_executor());
+			return net::make_strand(BaseExecutorType{});
 		}
 	};
 

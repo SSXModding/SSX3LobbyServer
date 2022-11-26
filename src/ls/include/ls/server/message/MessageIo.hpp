@@ -14,8 +14,10 @@
 
 #include <boost/asio/compose.hpp>
 #include <boost/asio/read.hpp>
+#include <boost/asio/deferred.hpp>
 #include <boost/asio/write.hpp>
 #include <ls/asio/AsioConfig.hpp>
+#include <ls/asio/WithTimeout.hpp>
 #include <ls/server/message/MessageBase.hpp>
 #include <ls/server/message/WireMessageHeader.hpp>
 
@@ -55,6 +57,7 @@ namespace ls {
 		}
 
 		static ReadError MakeAsio(const error_code& ec) {
+			fmt::print("asio error: {}\n", ec.message());
 			return {
 				.type = Type::AsioError,
 				.asioError = ec
@@ -63,6 +66,8 @@ namespace ls {
 	};
 
 	namespace detail {
+
+		// TODO: Reading should take advantage of the Asio recycling allocator.
 
 		template <typename Protocol>
 		struct AsyncReadMessageImpl {
@@ -75,9 +80,6 @@ namespace ls {
 			explicit constexpr AsyncReadMessageImpl(SocketType<Protocol>& socket)
 				: socket(socket),
 				  state(State::ReadHeader) {
-				// Allocate stuff we need to allocate
-				messagePayloadBuffer.reserve(512);
-				header = std::make_unique<WireMessageHeader>();
 			}
 
 			// 1MB max payload size; should be good enough?
@@ -85,49 +87,74 @@ namespace ls {
 
 			SocketType<Protocol>& socket;
 			State state;
-			std::unique_ptr<WireMessageHeader> header;
+
+			std::shared_ptr<SteadyTimerType> deadlineTimer;
+			std::shared_ptr<WireMessageHeader> header;
 			std::vector<std::uint8_t> messagePayloadBuffer;
 
 			std::shared_ptr<MessageBase> messagePtr {};
+
+			constexpr static auto READ_TIMEOUT = std::chrono::seconds(5);
+
+			void Deallocate() {
+				deadlineTimer.reset();
+				header.reset();
+				messagePayloadBuffer.clear();
+			}
 
 			void operator()(auto& self, const error_code& error = {}, std::size_t bytesRead = 0) {
 				switch(state) {
 					case State::ReadHeader:
 						state = State::HeaderRead;
-						net::async_read(socket, net::buffer(reinterpret_cast<std::uint8_t*>(header.get()), sizeof(WireMessageHeader)), net::transfer_exactly(sizeof(WireMessageHeader)), std::move(self));
+
+						// Allocate objects used throughout the operation.
+						messagePayloadBuffer.reserve(512);
+						header = std::allocate_shared<WireMessageHeader>(net::get_associated_allocator(self));
+						deadlineTimer = std::allocate_shared<SteadyTimerType>(net::get_associated_allocator(self), socket.get_executor(), READ_TIMEOUT);
+
+						WithTimeout(net::async_read(socket, net::buffer(reinterpret_cast<std::uint8_t*>(header.get()), sizeof(WireMessageHeader)), net::deferred), *deadlineTimer, std::move(self));
 						break;
 
 					case State::HeaderRead:
-						if(error && error != net::error::operation_aborted) {
-							self.complete(ReadError::MakeAsio(error), nullptr);
-							return;
+						// Most likely a true EOF, from disconnection.
+						if(error) {
+							Deallocate();
+							fmt::print("Error 1: {}\n", error.message());
+							self.complete(error, { });
+							break;
 						}
 
 						if(bytesRead != sizeof(WireMessageHeader)) {
-							self.complete(ReadError::Make(ReadError::Type::PartialRead, "Read {} bytes (when header is {} bytes)", bytesRead, sizeof(WireMessageHeader)), nullptr);
-							return;
+							Deallocate();
+							self.complete(net::error::make_error_code(net::error::misc_errors::eof), nullptr);
+							break;
 						}
 
 						if(header->payloadSize > MAX_PAYLOAD_SIZE) {
-							self.complete(ReadError::Make(ReadError::Type::InvalidHeader, "Payload size invalid ({} out of max of {})", header->payloadSize, MAX_PAYLOAD_SIZE), nullptr);
-							return;
+							Deallocate();
+							self.complete(net::error::make_error_code(net::error::misc_errors::eof), nullptr);
+							break;
 						}
 
 						// Now read the payload
 						state = State::ReadPayloadData;
 						messagePayloadBuffer.resize(header->payloadSize + 1);
-						net::async_read(socket, net::buffer(messagePayloadBuffer), net::transfer_exactly(messagePayloadBuffer.size()), std::move(self));
+						WithTimeout(net::async_read(socket, net::buffer(messagePayloadBuffer), net::deferred), *deadlineTimer, std::move(self));
 						break;
 
 					case State::ReadPayloadData:
-						if(error && error != net::error::operation_aborted) {
-							self.complete(ReadError::MakeAsio(error), nullptr);
-							return;
+
+						if(error) {
+							Deallocate();
+							fmt::print("Error 2: {}\n", error.message());
+							self.complete(error, nullptr);
+							break;
 						}
 
 						if(bytesRead != (header->payloadSize + 1)) {
-							self.complete(ReadError::Make(ReadError::Type::PartialRead, "Malformed payload (read {} bytes when supposed to read {})", bytesRead, header->payloadSize + 1), nullptr);
-							return;
+							Deallocate();
+							self.complete(net::error::make_error_code(net::error::misc_errors::eof), nullptr);
+							break;
 						}
 
 						messagePtr = ls::MessageBase::Create(header->typeCode);
@@ -135,17 +162,15 @@ namespace ls {
 						// Parse properties (if we have to)
 						if(header->payloadSize != 1 || header->payloadSize != 0) {
 							if(!messagePtr->ReadProperties(messagePayloadBuffer)) {
-								messagePayloadBuffer.clear();
-								self.complete(ReadError::Make(ReadError::Type::InvalidPayload, "Could not read properties of message"), nullptr);
-								return;
+								Deallocate();
+								self.complete(net::error::make_error_code(net::error::misc_errors::eof), nullptr);
+								break;
 							}
-
-							messagePayloadBuffer.clear();
 						}
 
-						header.reset();
+						Deallocate();
 						self.complete({}, messagePtr);
-						return;
+						break;
 				}
 			}
 		};
@@ -185,9 +210,9 @@ namespace ls {
 	/**
 	 * Read a Dirtysock message asynchronously.
 	 */
-	template <net::completion_token_for<void(ReadError, std::shared_ptr<MessageBase>)> CompletionToken, class Protocol>
+	template <net::completion_token_for<void(error_code, std::shared_ptr<MessageBase>)> CompletionToken, class Protocol>
 	auto AsyncReadMessage(SocketType<Protocol>& socket, CompletionToken&& token) {
-		using CompletionSig = void(ReadError, std::shared_ptr<MessageBase>);
+		using CompletionSig = void(error_code, std::shared_ptr<MessageBase>);
 		return net::async_compose<CompletionToken, CompletionSig>(detail::AsyncReadMessageImpl { socket }, token, socket);
 	}
 

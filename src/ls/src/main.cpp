@@ -26,7 +26,6 @@ int main(int argc, char** argv) {
 	// - toml (if an option wasnt set by cli)
 	// - defaults
 
-	boost::asio::io_context ioc;
 	ls::CommandLineConfigBackend clibackend(gConfigStore);
 
 	clibackend.Process(argc, argv);
@@ -35,8 +34,11 @@ int main(int argc, char** argv) {
 	// 	(see asio/thread_pool.hpp)
 
 	// Boot the server up.
-	std::make_shared<ls::Server>(ioc)->Start();
+	ls::Server server;
+	server.Start();
 
-	ioc.run();
+	// The main thread doesn't do anything when using the system_executor, so
+	// we just have it wait for the executor to run out of work.
+	ls::net::query(ls::BaseExecutorType{}, ls::net::execution::context).join();
 	return 0;
 }
